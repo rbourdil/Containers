@@ -2,6 +2,7 @@
 #define ITERATORS_HPP
 
 #include <stddef.h>
+#include <iostream>
 
 #include "../type_traits.hpp"
 #include "iterator_primitives.hpp"
@@ -29,18 +30,17 @@ namespace ft {
 
 			// Copy constructible
 			template <typename Iter>
-			rand_access_iterator(const rand_access_iterator<
-			Iter,
+			rand_access_iterator(const rand_access_iterator<Iter,
 			typename ft::enable_if<
-				(ft::are_same<Iter, typename Container::pointer>::value),
-				Container>::type>& orig) : _current(orig.base()) { }
+				(ft::are_same<Iter, typename Container::pointer>::value), Container>::type>& orig) :
+				_current(orig.base()) { }
 
-			rand_access_iterator(const Iterator& orig) : _current(orig) { }
+			rand_access_iterator(const Iterator& i) : _current(i) { }
 			
 			// Copy Assignable
-			rand_access_iterator&	operator=(const Iterator& orig)
+			rand_access_iterator&	operator=(const rand_access_iterator& orig)
 			{
-				_current = orig;
+				_current = orig._current;
 				return (*this);
 			}
 
@@ -74,7 +74,7 @@ namespace ft {
 			//Default constructible
 			rand_access_iterator(void) : _current(Iterator()) { }
 
-			const rand_access_iterator&	operator++(int)
+			rand_access_iterator	operator++(int)
 			{
 				rand_access_iterator	tmp(*this);
 				_current++;
@@ -91,7 +91,7 @@ namespace ft {
 				return (*this);
 			}
 			
-			const rand_access_iterator&	operator--(int)
+			rand_access_iterator	operator--(int)
 			{
 				rand_access_iterator	tmp(*this);
 				_current--;
@@ -136,12 +136,6 @@ namespace ft {
 				return (*(_current + n));
 			}
 
-			/* 	this function is used to access the _current protected member
-				for copy construction.
-				Since the object constructed from might be instantiated
-				differently from the object being constructed, _current
-				cannot be accessed directly
-			*/
 			const Iterator&	base(void) const
 			{
 				return (_current);
@@ -156,28 +150,28 @@ namespace ft {
 	inline bool	operator==(const rand_access_iterator<IteratorL, Container>& l,
 			const rand_access_iterator<IteratorR, Container>& r)
 	{
-		return (l._current == r._current);
+		return (l.base() == r.base());
 	}
 
 	template <typename Iterator, typename Container>
 	inline bool	operator==(const rand_access_iterator<Iterator, Container>& l,
 			const rand_access_iterator<Iterator, Container>& r)
 	{
-		return (l._current == r._current);
+		return (l.base() == r.base());
 	}
 
 	template <typename IteratorL, typename IteratorR, typename Container>
 	inline bool	operator!=(const rand_access_iterator<IteratorL, Container>& l,
 			const rand_access_iterator<IteratorR, Container>& r)
 	{
-		return (l._current != r._current);
+		return (l.base() != r.base());
 	}
 
 	template <typename Iterator, typename Container>
 	inline bool	operator!=(const rand_access_iterator<Iterator, Container>& l,
 			const rand_access_iterator<Iterator, Container>& r)
 	{
-		return (l._current != r._current);
+		return (l.base() != r.base());
 	}
 
 	/***************************************/
@@ -188,56 +182,56 @@ namespace ft {
 	inline bool	operator<(const rand_access_iterator<IteratorL, Container>& l,
 			const rand_access_iterator<IteratorR, Container>& r)
 	{
-		return (l._current < r._current);
+		return (l.base() < r.base());
 	}
 
 	template <typename Iterator, typename Container>
 	inline bool	operator<(const rand_access_iterator<Iterator, Container>& l,
 			const rand_access_iterator<Iterator, Container>& r)
 	{
-		return (l._current < r._current);
+		return (l.base() < r.base());
 	}
 
 	template <typename IteratorL, typename IteratorR, typename Container>
 	inline bool	operator>(const rand_access_iterator<IteratorL, Container>& l,
 			const rand_access_iterator<IteratorR, Container>& r)
 	{
-		return (l._current > r._current);
+		return (l.base() > r.base());
 	}
 
 	template <typename Iterator, typename Container>
 	inline bool	operator>(const rand_access_iterator<Iterator, Container>& l,
 			const rand_access_iterator<Iterator, Container>& r)
 	{
-		return (l._current > r._current);
+		return (l.base() > r.base());
 	}
 
 	template <typename IteratorL, typename IteratorR, typename Container>
 	inline bool	operator<=(const rand_access_iterator<IteratorL, Container>& l,
 			const rand_access_iterator<IteratorR, Container>& r)
 	{
-		return (l._current <= r._current);
+		return (l.base() <= r.base());
 	}
 
 	template <typename Iterator, typename Container>
 	inline bool	operator<=(const rand_access_iterator<Iterator, Container>& l,
 			const rand_access_iterator<Iterator, Container>& r)
 	{
-		return (l._current <= r._current);
+		return (l.base() <= r.base());
 	}
 
 	template <typename IteratorL, typename IteratorR, typename Container>
 	inline bool	operator>=(const rand_access_iterator<IteratorL, Container>& l,
 			const rand_access_iterator<IteratorR, Container>& r)
 	{
-		return (l._current >= r._current);
+		return (l.base() >= r.base());
 	}
 
 	template <typename Iterator, typename Container>
 	inline bool	operator>=(const rand_access_iterator<Iterator, Container>& l,
 			const rand_access_iterator<Iterator, Container>& r)
 	{
-		return (l._current >= r._current);
+		return (l.base() >= r.base());
 	}
 
 }
