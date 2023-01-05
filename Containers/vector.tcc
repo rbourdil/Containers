@@ -102,11 +102,13 @@ void vector<T, Allocator>::fill_insert(iterator p, size_type n, const value_type
 			std::uninitialized_copy(tmp_start, tmp_end, p + n);
 			ft::destroy(tmp_start, tmp_end, _alloc);
 			_alloc.deallocate(tmp, n);
+			_markers._end += n;
 		}
 		else // copy at the end of the vector
 		{
 			for (i = 0; i < n; i++, p++)
 				_alloc.construct(_markers._start + (p - begin()), t);
+			_markers._end += n;
 		}
 	}
 	else // need to allocate more room
@@ -149,11 +151,13 @@ void vector<T, Allocator>::range_insert(iterator p, _Iter i, _Iter j)
 			std::uninitialized_copy(tmp_start, tmp_end, p + n);
 			ft::destroy(tmp_start, tmp_end, _alloc);
 			_alloc.deallocate(tmp, n);
+			_markers._end += n;
 		}
 		else // copy at the end of the vector
 		{
 			for (k = 0; k < n; k++, p++, i++)
 				_alloc.construct(_markers._start + (p - begin()), *i);
+			_markers._end += n;
 		}
 	}
 	else // need to allocate more room

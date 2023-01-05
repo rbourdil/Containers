@@ -62,7 +62,7 @@ namespace ft {
 
 			// size & value constructor
 			explicit
-			vector(size_type n, const value_type& t)
+			vector(size_type n, const value_type& t = value_type())
 			{
 				fill_initialize(n, t);
 			}
@@ -85,8 +85,8 @@ namespace ft {
 			template <typename InputIterator>
 			void	assign(InputIterator first, InputIterator last)
 			{
-				erase(begin(), end());
-				insert(begin(), first, last);
+				typename is_integral<InputIterator>::type	isInt;	
+				__assign(first, last, isInt);
 			}
 
 			void	assign(size_type n, const value_type& t)
@@ -259,11 +259,15 @@ namespace ft {
 
 			const_reference	at(size_type n) const
 			{
+				if (n >= size())
+					throw std::out_of_range("Subscript out of range");
 				return (*(begin() + n));
 			}
 
 			reference	at(size_type n)
 			{
+				if (n >= size())
+					throw std::out_of_range("Subscript out of range");
 				return (*(begin() + n));
 			}
 
@@ -313,7 +317,7 @@ namespace ft {
 			template <typename InputIt>
 			void	copy_initialize(InputIt first, InputIt last, ft::false_type)
 			{
-				const size_type	n = last - first;
+				const size_type	n = ft::distance(first, last);
 
 				if (n > max_size())
 					throw std::length_error("Tried to allocate over max size");
@@ -348,7 +352,22 @@ namespace ft {
 			
 			void	fill_insert(iterator p, size_type n, const value_type& t);
 			template <typename _Iter>
+
 			void	range_insert(iterator p, _Iter i, _Iter j);
+
+			template <typename _Iter>
+			void __assign(_Iter first, _Iter last, false_type)
+			{
+				erase(begin(), end());
+				insert(begin(), first, last);
+			}
+
+			template <typename _Int>
+			void __assign(_Int n, _Int t, true_type)
+			{
+				erase(begin(), end());
+				insert(begin(), n, t);
+			}
 	};
 
 	template <typename T, typename Alloc>
