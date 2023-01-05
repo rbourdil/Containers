@@ -4,13 +4,13 @@
 #include "iterator/iterator_adaptors.hpp"
 #include "iterator/iterator_primitives.hpp"
 #include "iterator/iterators.hpp"
-#include "includes/stl_vector.h"
+#include "Containers/vector.hpp"
 
 int	main(void)
 {
 	{
-	typedef ft::rand_access_iterator<const int*, std::vector<int> >	_const_iter;
-	typedef ft::rand_access_iterator<int*, std::vector<int> >	_iter;
+	typedef ft::rand_access_iterator<const int*, ft::vector<int> >	_const_iter;
+	typedef ft::rand_access_iterator<int*, ft::vector<int> >	_iter;
 
 	int	src[5] = { 0, 1, 2, 3, 4 };
 	_iter		a(src);
@@ -44,11 +44,11 @@ int	main(void)
 	}
 	std::cout << std::endl;
 	{
-	typedef std::vector<int>::iterator	iter;
-	typedef std::vector<int>::const_iterator	const_iter;
+	typedef ft::vector<int>::iterator	iter;
+	typedef ft::vector<int>::const_iterator	const_iter;
 
-	std::vector<int>			vec1;
-	std::vector<int>			vec2;
+	ft::vector<int>			vec1;
+	ft::vector<int>			vec2;
 
 	vec1.push_back(0);
 	vec1.push_back(1);
@@ -127,10 +127,10 @@ int	main(void)
 	}
 	std::cout << std::endl;
 	{
-	typedef std::vector<std::vector<int> >::iterator	iter;
+	typedef ft::vector<ft::vector<int> >::iterator	iter;
 
-	std::vector<std::vector<int> >	vec1;
-	std::vector<int>				vec2;
+	ft::vector<ft::vector<int> >	vec1;
+	ft::vector<int>				vec2;
 
 	vec2.push_back(3);
 	vec2.push_back(4);

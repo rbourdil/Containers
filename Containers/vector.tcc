@@ -15,11 +15,12 @@ vector<T, Allocator>::operator=(const vector& orig)
 		// if the range to copy is greater than the capacity of our vector
 		if (orig_len > capacity())
 		{
-			pointer	tmp = _alloc.allocate(orig_len);
-			ft::destroy(_markers._start, _markers._end, _alloc);
+			pointer	new_start = _alloc.allocate(orig_len);
+			ft::destroy(begin(), end(), _alloc);
 			_alloc.deallocate(_markers._start, _markers._last - _markers._start);
-			_markers._start = tmp;
-			_markers._end = std::uninitialized_copy(orig.begin(), orig.end(), _markers._start);
+			_markers._start = new_start;
+			pointer	new_end = std::uninitialized_copy(orig.begin(), orig.end(), _markers._start);
+			_markers._end = _markers._start + (new_end - new_start);
 			_markers._last = _markers._start + orig_len;
 		}
 		// if the size of our vector is greater than the range to copy, copy the smaller part and destroy what's left
@@ -68,14 +69,14 @@ vector<T, Allocator>::insert(iterator p, const value_type& t)
 		size_type	len = check_len(1);
 		pointer	new_start = _alloc.allocate(len);
 		iterator	new_end = std::uninitialized_copy(begin(), p, iterator(new_start));
-		*new_end = t;
+		_alloc.construct(new_start + (new_end - iterator(new_start)), t);
 		new_end++;
-		new_end = std::uninitialized_copy(p, end(), new_end);
-		size_type	end_pos = new_end - iterator(new_start);
+		if (p != end())
+			new_end = std::uninitialized_copy(p, end(), new_end);
 		ft::destroy(begin(), end(), _alloc);
 		_alloc.deallocate(_markers._start, _markers._last - _markers._start);
 		_markers._start = new_start;
-		_markers._end = _markers._start + end_pos;
+		_markers._end = _markers._start + (new_end - iterator(new_start));
 		_markers._last = _markers._start + len;
 	}
 	return (begin() + n);
@@ -173,6 +174,24 @@ void vector<T, Allocator>::range_insert(iterator p, _Iter i, _Iter j)
 	}
 }	
 
+template <typename T, typename Allocator>
+void	vector<T, Allocator>::reserve(size_type n)
+{
+	if (n > max_size())
+		throw std::length_error("Tried to reserve in excess of maximum capacity");
+	if (n > capacity())
+	{
+		pointer	new_start = _alloc.allocate(n);
+		iterator	i_start = iterator(new_start);
+		iterator	i_end = std::uninitialized_copy(begin(), end(), i_start);
+		ft::destroy(begin(), end(), _alloc);
+		_alloc.deallocate(_markers._start, _markers._last - _markers._start);
+		_markers._start = new_start;
+		_markers._end = new_start + (i_end - i_start);
+		_markers._last = new_start + n;
+	}
 }
+
+} // namespace ft
 
 #endif

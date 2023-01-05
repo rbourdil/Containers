@@ -17,6 +17,9 @@ namespace ft {
 		Pointer	_end;
 		Pointer	_last;
 
+		Markers() : _start(), _end(), _last()
+		{ }
+
 		void	copy_markers(const Markers& orig)
 		{
 			_start = orig._start;
@@ -30,17 +33,17 @@ namespace ft {
 
 		
 		public:
-			typedef typename Allocator::pointer			pointer;
-			typedef typename Allocator::const_pointer	const_pointer;
-			typedef T			value_type;
-			typedef T&			reference;
-			typedef const T&	const_reference;
-			typedef ft::rand_access_iterator<pointer, vector>	iterator;
-			typedef ft::rand_access_iterator<const_pointer, vector>	const_iterator;
+			typedef typename Allocator::pointer								pointer;
+			typedef typename Allocator::const_pointer						const_pointer;
+			typedef T														value_type;
+			typedef typename Allocator::reference							reference;
+			typedef typename Allocator::const_reference						const_reference;
+			typedef ft::rand_access_iterator<pointer, vector>				iterator;
+			typedef ft::rand_access_iterator<const_pointer, vector>			const_iterator;
 			typedef	typename ft::iterator_traits<iterator>::difference_type	difference_type; 
-			typedef size_t		size_type;
-			typedef ft::reverse_iterator<iterator>	reverse_iterator;
-			typedef ft::reverse_iterator<const_iterator>	const_reverse_iterator;
+			typedef size_t													size_type;
+			typedef ft::reverse_iterator<iterator>							reverse_iterator;
+			typedef ft::reverse_iterator<const_iterator>					const_reverse_iterator;
 		
 			// Default: empty vector
 			vector(void) { }
@@ -77,6 +80,19 @@ namespace ft {
 			{
 				ft::destroy(_markers._start, _markers._end, _alloc);
 				_alloc.deallocate(_markers._start, _markers._last - _markers._start);
+			}
+
+			template <typename InputIterator>
+			void	assign(InputIterator first, InputIterator last)
+			{
+				erase(begin(), end());
+				insert(begin(), first, last);
+			}
+
+			void	assign(size_type n, const value_type& t)
+			{
+				erase(begin(), end());
+				insert(begin(), n, t);
 			}
 
 			iterator	begin(void)
@@ -118,17 +134,7 @@ namespace ft {
 			{
 				return (reverse_iterator(begin()));
 			}
-
-			void	swap(vector& v)
-			{
-				Markers<pointer>	tmp;
-
-				tmp.copy_markers(_markers);
-				_markers.copy_markers(v._markers);
-				v._markers.copy_markers(tmp);
-				std::swap(_alloc, v._alloc);
-			}
-
+			
 			size_type	size(void) const
 			{
 				return (_markers._end - _markers._start);
@@ -149,6 +155,35 @@ namespace ft {
 				return (_markers._last - _markers._start);
 			}
 
+			void	reserve(size_type n);
+
+			void	resize(size_type sz, value_type c = value_type())
+			{
+				if (sz > size())
+					insert(end(), sz - size(), c);
+				else if (sz < size())
+					erase(begin() + sz, end());
+			}
+
+			// Modifiers
+
+			void	push_back(const value_type& t)
+			{
+				if (_markers._end != _markers._last)
+				{
+					_alloc.construct(_markers._end, t);
+					_markers._end++;
+				}
+				else
+					insert(end(), t);
+			}
+
+			void	pop_back(void)
+			{
+				_markers._end--;
+				ft::destroy(end(), end() + 1, _alloc);
+			}
+
 			// insert a value at pos p (defined in .tcc)
 			iterator	insert(iterator p, const value_type& t);
 
@@ -167,6 +202,91 @@ namespace ft {
 				// depending on whether _Iter is an integral type
 				select_insert(p, i, j, isInt());
 			}
+
+			// erases one element in the vector
+			iterator	erase(iterator pos)
+			{
+				// if the element to erase is not at the end
+				if (pos + 1 != end())
+					std::copy(pos + 1, end(), pos);
+				else
+					ft::destroy(pos, pos + 1, _alloc);
+				_markers._end--;
+				return (pos);
+			}
+
+			// erases a range of elements in the vector
+			iterator	erase(iterator first, iterator last)
+			{
+				if (first != last)
+				{
+					// if the range to erase does not reach the end
+					if (last != end())
+						std::copy(last, end(), first);
+					ft::destroy(first + (end() - last), end(), _alloc);
+					_markers._end -= (last - first);
+				}
+				return (first);
+			}
+
+			void	swap(vector& v)
+			{
+				Markers<pointer>	tmp;
+
+				tmp.copy_markers(_markers);
+				_markers.copy_markers(v._markers);
+				v._markers.copy_markers(tmp);
+				std::swap(_alloc, v._alloc);
+			}
+
+			void	clear(void)
+			{
+				erase(begin(), end());
+			}
+
+
+			// Element Access
+			
+			reference	operator[](size_type n)
+			{
+				return (*(begin() + n));
+			}
+
+			const_reference	operator[](size_type n) const
+			{
+				return (*(begin() + n));
+			}
+
+			const_reference	at(size_type n) const
+			{
+				return (*(begin() + n));
+			}
+
+			reference	at(size_type n)
+			{
+				return (*(begin() + n));
+			}
+
+			reference	front(void)
+			{
+				return (*begin());
+			}
+
+			const_reference	front(void) const
+			{
+				return (*begin());
+			}
+
+			reference	back(void)
+			{
+				return (*--end());
+			}
+
+			const_reference	back(void) const
+			{
+				return (*--end());
+			}
+
 
 		private:
 			Allocator			_alloc;
@@ -219,11 +339,13 @@ namespace ft {
 			{
 				fill_insert(p, n, t);
 			}
+
 			template <typename _Iter>
 			void	select_insert(iterator p, _Iter i, _Iter j, false_type)
 			{
 				range_insert(p, i, j);
 			}
+			
 			void	fill_insert(iterator p, size_type n, const value_type& t);
 			template <typename _Iter>
 			void	range_insert(iterator p, _Iter i, _Iter j);
