@@ -17,7 +17,7 @@ vector<T, Allocator>::operator=(const vector& orig)
 		{
 			pointer	new_start = _alloc.allocate(orig_len);
 			ft::destroy(begin(), end(), _alloc);
-			_alloc.deallocate(_markers._start, _markers._last - _markers._start);
+			safe_deallocate(_markers._start, _markers._last - _markers._start);
 			_markers._start = new_start;
 			pointer	new_end = std::uninitialized_copy(orig.begin(), orig.end(), _markers._start);
 			_markers._end = _markers._start + (new_end - new_start);
@@ -74,7 +74,7 @@ vector<T, Allocator>::insert(iterator p, const value_type& t)
 		if (p != end())
 			new_end = std::uninitialized_copy(p, end(), new_end);
 		ft::destroy(begin(), end(), _alloc);
-		_alloc.deallocate(_markers._start, _markers._last - _markers._start);
+		safe_deallocate(_markers._start, _markers._last - _markers._start);
 		_markers._start = new_start;
 		_markers._end = _markers._start + (new_end - iterator(new_start));
 		_markers._last = _markers._start + len;
@@ -102,7 +102,7 @@ void vector<T, Allocator>::fill_insert(iterator p, size_type n, const value_type
 				_alloc.construct(_markers._start + (p - begin()), t);
 			std::uninitialized_copy(tmp_start, tmp_end, p);
 			ft::destroy(tmp_start, tmp_end, _alloc);
-			_alloc.deallocate(tmp, block_len);
+			safe_deallocate(tmp, block_len);
 			_markers._end += n;
 		}
 		else // copy at the end of the vector

@@ -79,7 +79,7 @@ namespace ft {
 			~vector(void)
 			{
 				ft::destroy(_markers._start, _markers._end, _alloc);
-				_alloc.deallocate(_markers._start, _markers._last - _markers._start);
+				safe_deallocate(_markers._start, _markers._last - _markers._start);
 			}
 
 			template <typename InputIterator>
@@ -367,6 +367,12 @@ namespace ft {
 			{
 				erase(begin(), end());
 				insert(begin(), n, t);
+			}
+
+			void	safe_deallocate(pointer p, size_type n)
+			{
+				if (p)
+					_alloc.deallocate(p, n);
 			}
 	};
 
