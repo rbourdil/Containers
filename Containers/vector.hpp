@@ -44,6 +44,7 @@ namespace ft {
 			typedef size_t													size_type;
 			typedef ft::reverse_iterator<iterator>							reverse_iterator;
 			typedef ft::reverse_iterator<const_iterator>					const_reverse_iterator;
+			typedef Allocator												allocator_type;
 		
 			// Default: empty vector
 			vector(void) { }
@@ -54,11 +55,15 @@ namespace ft {
 				_alloc = orig._alloc;
 				_markers._start = _alloc.allocate(orig.size());
 				_markers._last = _markers._start + orig.size();
-				_markers._end = std::uninitialized_copy(orig.begin(), orig.end(), _markers._start);
+				_markers._end = ft::_my_uninitialized_copy(orig.begin(), orig.end(), _markers._start, _alloc);
 			}
 
 			// Copy assignment operator (defined in .tcc)
 			vector&	operator=(const vector& orig);
+
+			// Alloc constructor
+			vector(const allocator_type& a) : _alloc(a)
+			{ }
 
 			// size & value constructor
 			explicit
@@ -78,7 +83,7 @@ namespace ft {
 			// Destructor
 			~vector(void)
 			{
-				ft::destroy(_markers._start, _markers._end, _alloc);
+				ft::destroy(begin(), end(), _alloc);
 				safe_deallocate(_markers._start, _markers._last - _markers._start);
 			}
 
@@ -127,12 +132,12 @@ namespace ft {
 
 			reverse_iterator	rend(void)
 			{
-				return (reverse_iterator(begin()));
+				return (reverse_iterator(_markers._start));
 			}
 
 			const_reverse_iterator	rend(void) const
 			{
-				return (reverse_iterator(begin()));
+				return (reverse_iterator(_markers._start));
 			}
 			
 			size_type	size(void) const
@@ -303,7 +308,7 @@ namespace ft {
 				_markers._start = _alloc.allocate(n);
 				_markers._last = _markers._start + n;
 				_markers._end = _markers._start + n;
-				std::uninitialized_fill(_markers._start, _markers._start + n, t);
+				ft::_my_uninitialized_fill(_markers._start, _markers._start + n, t, _alloc);
 			}
 
 			template <typename Integer>
@@ -323,7 +328,7 @@ namespace ft {
 					throw std::length_error("Tried to allocate over max size");
 				_markers._start = _alloc.allocate(n);
 				_markers._last = _markers._start + n;
-				_markers._end = std::uninitialized_copy(first, last, _markers._start);
+				_markers._end = ft::_my_uninitialized_copy(first, last, _markers._start, _alloc);
 			}	
 
 			size_type	check_len(size_type n)

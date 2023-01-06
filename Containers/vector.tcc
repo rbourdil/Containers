@@ -19,7 +19,7 @@ vector<T, Allocator>::operator=(const vector& orig)
 			ft::destroy(begin(), end(), _alloc);
 			safe_deallocate(_markers._start, _markers._last - _markers._start);
 			_markers._start = new_start;
-			pointer	new_end = std::uninitialized_copy(orig.begin(), orig.end(), _markers._start);
+			pointer	new_end = ft::_my_uninitialized_copy(orig.begin(), orig.end(), _markers._start, _alloc);
 			_markers._end = _markers._start + (new_end - new_start);
 			_markers._last = _markers._start + orig_len;
 		}
@@ -34,7 +34,7 @@ vector<T, Allocator>::operator=(const vector& orig)
 		else
 		{
 			std::copy(orig.begin(), orig.begin() + size(), _markers._start);
-			std::uninitialized_copy(orig.begin() + size(), orig.end(), _markers._end);
+			ft::_my_uninitialized_copy(orig.begin() + size(), orig.end(), _markers._end, _alloc);
 		} 
 	}
 	return (*this);
@@ -68,11 +68,11 @@ vector<T, Allocator>::insert(iterator p, const value_type& t)
 	{
 		size_type	len = check_len(1);
 		pointer	new_start = _alloc.allocate(len);
-		iterator	new_end = std::uninitialized_copy(begin(), p, iterator(new_start));
+		iterator	new_end = ft::_my_uninitialized_copy(begin(), p, iterator(new_start), _alloc);
 		_alloc.construct(new_start + (new_end - iterator(new_start)), t);
 		new_end++;
 		if (p != end())
-			new_end = std::uninitialized_copy(p, end(), new_end);
+			new_end = ft::_my_uninitialized_copy(p, end(), new_end, _alloc);
 		ft::destroy(begin(), end(), _alloc);
 		safe_deallocate(_markers._start, _markers._last - _markers._start);
 		_markers._start = new_start;
@@ -95,12 +95,12 @@ void vector<T, Allocator>::fill_insert(iterator p, size_type n, const value_type
 			size_type	block_len = ft::distance(p, end());
 			pointer		tmp = _alloc.allocate(block_len);
 			iterator	tmp_start = iterator(tmp);
-			iterator	tmp_end = std::uninitialized_copy(p, end(), tmp_start);
+			iterator	tmp_end = ft::_my_uninitialized_copy(p, end(), tmp_start, _alloc);
 			for (i = 0; i < n && p != end(); i++)
 				*p++ = t;
 			for (; i < n; i++, p++)
 				_alloc.construct(_markers._start + (p - begin()), t);
-			std::uninitialized_copy(tmp_start, tmp_end, p);
+			ft::_my_uninitialized_copy(tmp_start, tmp_end, p, _alloc);
 			ft::destroy(tmp_start, tmp_end, _alloc);
 			safe_deallocate(tmp, block_len);
 			_markers._end += n;
@@ -117,10 +117,10 @@ void vector<T, Allocator>::fill_insert(iterator p, size_type n, const value_type
 		size_type	len = check_len(n);	
 		pointer		pstart = _alloc.allocate(len);
 		iterator	new_start = iterator(pstart);
-		iterator	new_end = std::uninitialized_copy(begin(), p, new_start);
+		iterator	new_end = ft::_my_uninitialized_copy(begin(), p, new_start, _alloc);
 		for (i = 0; i < n; i++, new_end++)
 			_alloc.construct(pstart + (new_end - new_start), t);
-		new_end = std::uninitialized_copy(p, end(), new_end);
+		new_end = ft::_my_uninitialized_copy(p, end(), new_end, _alloc);
 		size_type	end_pos = new_end - new_start;
 		ft::destroy(begin(), end(), _alloc);
 		_alloc.deallocate(_markers._start, _markers._last - _markers._start);
@@ -144,12 +144,12 @@ void vector<T, Allocator>::range_insert(iterator p, _Iter i, _Iter j)
 		{
 			pointer		tmp = _alloc.allocate(n);
 			iterator	tmp_start = iterator(tmp);
-			iterator	tmp_end = std::uninitialized_copy(p, p + n, tmp_start);
+			iterator	tmp_end = ft::_my_uninitialized_copy(p, p + n, tmp_start, _alloc);
 			for (k = 0; k < n && p != end(); k++)
 				*p++ = *i++;
 			for (; k < n; k++, p++, i++)
 				_alloc.construct(_markers._start + (p - begin()), *i);
-			std::uninitialized_copy(tmp_start, tmp_end, p + n);
+			ft::_my_uninitialized_copy(tmp_start, tmp_end, p + n, _alloc);
 			ft::destroy(tmp_start, tmp_end, _alloc);
 			_alloc.deallocate(tmp, n);
 			_markers._end += n;
@@ -166,10 +166,10 @@ void vector<T, Allocator>::range_insert(iterator p, _Iter i, _Iter j)
 		size_type	len = check_len(n);	
 		pointer		pstart = _alloc.allocate(len);
 		iterator	new_start = iterator(pstart);
-		iterator	new_end = std::uninitialized_copy(begin(), p, new_start);
+		iterator	new_end = ft::_my_uninitialized_copy(begin(), p, new_start, _alloc);
 		for (k = 0; k < n; k++, new_end++, i++)
 			_alloc.construct(pstart + (new_end - new_start), *i);
-		new_end = std::uninitialized_copy(p, end(), new_end);
+		new_end = ft::_my_uninitialized_copy(p, end(), new_end, _alloc);
 		size_type	end_pos = new_end - new_start;
 		ft::destroy(begin(), end(), _alloc);
 		_alloc.deallocate(_markers._start, _markers._last - _markers._start);
@@ -188,7 +188,7 @@ void	vector<T, Allocator>::reserve(size_type n)
 	{
 		pointer	new_start = _alloc.allocate(n);
 		iterator	i_start = iterator(new_start);
-		iterator	i_end = std::uninitialized_copy(begin(), end(), i_start);
+		iterator	i_end = ft::_my_uninitialized_copy(begin(), end(), i_start, _alloc);
 		ft::destroy(begin(), end(), _alloc);
 		_alloc.deallocate(_markers._start, _markers._last - _markers._start);
 		_markers._start = new_start;
