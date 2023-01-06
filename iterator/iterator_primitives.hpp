@@ -84,7 +84,7 @@ namespace ft {
 	template <typename InputIterator, typename Distance>
 	inline void	advance(InputIterator& i, Distance n)
 	{
-		typename iterator_traits<InputIterator>::difference_type	d = n;
+		typename ft::iterator_traits<InputIterator>::difference_type	d = n;
 		_advance(i, d, typename iterator_traits<InputIterator>::iterator_category());
 	}
 
@@ -92,11 +92,11 @@ namespace ft {
 	inline typename iterator_traits<InputIterator>::difference_type
 		_distance(InputIterator first, InputIterator last, std::input_iterator_tag)
 	{
-		typename iterator_traits<InputIterator>::difference_type	d = 0;
+		typename ft::iterator_traits<InputIterator>::difference_type	d = 0;
 		while (first != last)
 		{
-			first++;
-			d++;
+			++first;
+			++d;
 		}
 		return (d);
 	}
@@ -107,6 +107,7 @@ namespace ft {
 	{
 		return (last - first);
 	}
+
 	template <typename InputIterator>
 	inline typename iterator_traits<InputIterator>::difference_type
 		distance(InputIterator first, InputIterator last)

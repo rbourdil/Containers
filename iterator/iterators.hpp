@@ -37,12 +37,14 @@ namespace ft {
 
 			rand_access_iterator(const Iterator& i) : _current(i) { }
 			
+			/*
 			// Copy Assignable
 			rand_access_iterator&	operator=(const rand_access_iterator& orig)
 			{
 				_current = orig._current;
 				return (*this);
 			}
+			*/
 
 			// Destructible
 			~rand_access_iterator(void) { }

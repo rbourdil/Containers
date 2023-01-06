@@ -123,7 +123,7 @@ void vector<T, Allocator>::fill_insert(iterator p, size_type n, const value_type
 		new_end = ft::_my_uninitialized_copy(p, end(), new_end, _alloc);
 		size_type	end_pos = new_end - new_start;
 		ft::destroy(begin(), end(), _alloc);
-		_alloc.deallocate(_markers._start, _markers._last - _markers._start);
+		safe_deallocate(_markers._start, _markers._last - _markers._start);
 		_markers._start = pstart;
 		_markers._end = _markers._start + end_pos;
 		_markers._last = _markers._start + len;
@@ -151,7 +151,7 @@ void vector<T, Allocator>::range_insert(iterator p, _Iter i, _Iter j)
 				_alloc.construct(_markers._start + (p - begin()), *i);
 			ft::_my_uninitialized_copy(tmp_start, tmp_end, p + n, _alloc);
 			ft::destroy(tmp_start, tmp_end, _alloc);
-			_alloc.deallocate(tmp, n);
+			safe_deallocate(tmp, n);
 			_markers._end += n;
 		}
 		else // copy at the end of the vector
@@ -167,12 +167,11 @@ void vector<T, Allocator>::range_insert(iterator p, _Iter i, _Iter j)
 		pointer		pstart = _alloc.allocate(len);
 		iterator	new_start = iterator(pstart);
 		iterator	new_end = ft::_my_uninitialized_copy(begin(), p, new_start, _alloc);
-		for (k = 0; k < n; k++, new_end++, i++)
-			_alloc.construct(pstart + (new_end - new_start), *i);
+		new_end = ft::_my_uninitialized_copy(i, j, new_end, _alloc);
 		new_end = ft::_my_uninitialized_copy(p, end(), new_end, _alloc);
 		size_type	end_pos = new_end - new_start;
 		ft::destroy(begin(), end(), _alloc);
-		_alloc.deallocate(_markers._start, _markers._last - _markers._start);
+		safe_deallocate(_markers._start, _markers._last - _markers._start);
 		_markers._start = pstart;
 		_markers._end = _markers._start + end_pos;
 		_markers._last = _markers._start + len;
@@ -190,7 +189,7 @@ void	vector<T, Allocator>::reserve(size_type n)
 		iterator	i_start = iterator(new_start);
 		iterator	i_end = ft::_my_uninitialized_copy(begin(), end(), i_start, _alloc);
 		ft::destroy(begin(), end(), _alloc);
-		_alloc.deallocate(_markers._start, _markers._last - _markers._start);
+		safe_deallocate(_markers._start, _markers._last - _markers._start);
 		_markers._start = new_start;
 		_markers._end = new_start + (i_end - i_start);
 		_markers._last = new_start + n;

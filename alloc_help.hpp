@@ -11,7 +11,7 @@ namespace ft {
 		while (first != last)
 		{
 			alloc.destroy(__builtin_addressof(*first));
-			first++;
+			++first;
 		}
 	}
 
@@ -21,8 +21,8 @@ namespace ft {
 		while (first != last)
 		{
 			alloc.construct(__builtin_addressof(*p), *first);
-			first++;
-			p++;
+			++first;
+			++p;
 		}
 		return (p);
 	}
@@ -33,7 +33,7 @@ namespace ft {
 		while (first != last)
 		{
 			alloc.construct(__builtin_addressof(*first), val);
-			first++;
+			++first;
 		}
 	}
 
