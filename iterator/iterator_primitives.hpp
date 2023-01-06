@@ -1,13 +1,17 @@
 #ifndef ITERATOR_PRIMITIVES_HPP
 #define ITERATOR_PRIMITIVES_HPP
 
+#include <iterator>
+
 namespace ft {
 
+	/*
 	struct input_iterator_tag { };
 	struct output_iterator_tag { };
 	struct forward_iterator_tag : public input_iterator_tag { };
 	struct bidirectional_iterator_tag : public forward_iterator_tag { };
 	struct random_access_iterator_tag : public bidirectional_iterator_tag { };
+	*/
 
 	template <typename Iterator>
 	struct iterator_traits {
@@ -24,7 +28,7 @@ namespace ft {
 		typedef T							value_type;
 		typedef T*							pointer;
 		typedef T&							reference;
-		typedef random_access_iterator_tag	iterator_category;
+		typedef std::random_access_iterator_tag	iterator_category;
 	};
 
 	template <typename T>
@@ -33,7 +37,7 @@ namespace ft {
 		typedef T							value_type;
 		typedef const T*					pointer;
 		typedef const T&					reference;
-		typedef random_access_iterator_tag	iterator_category;
+		typedef std::random_access_iterator_tag	iterator_category;
 	};
 
 	template <
@@ -52,13 +56,14 @@ namespace ft {
 
 	// iterator operations
 	template <typename InputIterator, typename Distance>
-		void	_advance(InputIterator& i, Distance n, input_iterator_tag)
+		void	_advance(InputIterator& i, Distance n, std::input_iterator_tag)
 	{
 		while (n-- > 0)
 			i++;
 	}
+
 	template <typename BiDirIterator, typename Distance>
-	inline void	_advance(BiDirIterator& i, Distance n, bidirectional_iterator_tag)
+	inline void	_advance(BiDirIterator& i, Distance n, std::bidirectional_iterator_tag)
 	{
 		if (n > 0)
 		{
@@ -69,11 +74,13 @@ namespace ft {
 			while (n++ < 0)
 				i--;
 	}
+
 	template <typename RandAccessIterator, typename Distance>
-	inline void	_advance(RandAccessIterator& i, Distance n, random_access_iterator_tag)
+	inline void	_advance(RandAccessIterator& i, Distance n, std::random_access_iterator_tag)
 	{
 		i += n;
 	}
+
 	template <typename InputIterator, typename Distance>
 	inline void	advance(InputIterator& i, Distance n)
 	{
@@ -83,7 +90,7 @@ namespace ft {
 
 	template <typename InputIterator>
 	inline typename iterator_traits<InputIterator>::difference_type
-		_distance(InputIterator first, InputIterator last, input_iterator_tag)
+		_distance(InputIterator first, InputIterator last, std::input_iterator_tag)
 	{
 		typename iterator_traits<InputIterator>::difference_type	d = 0;
 		while (first != last)
@@ -93,9 +100,10 @@ namespace ft {
 		}
 		return (d);
 	}
+
 	template <typename RandAccessIterator>
 	inline typename iterator_traits<RandAccessIterator>::difference_type
-		_distance(RandAccessIterator first, RandAccessIterator last, random_access_iterator_tag)
+		_distance(RandAccessIterator first, RandAccessIterator last, std::random_access_iterator_tag)
 	{
 		return (last - first);
 	}

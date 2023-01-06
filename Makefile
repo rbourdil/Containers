@@ -1,12 +1,12 @@
 NAME = containers
 
-OBJS = main.o
+OBJS = rite_eq_ope.o
 
 HEADS = iterator/iterator_adaptors.hpp iterator/iterator_primitives.hpp
 
 CC = c++
 
-FLAGS = -std=c++98 -Wall -Wextra -Werror
+FLAGS = -std=c++98 -Wall -Wextra -Werror 
 
 all:		$(NAME)
 

@@ -29,6 +29,7 @@ namespace ft {
 			first1++;
 			first2++;
 		}
+		return ((first1 == last1) && (first2 != last2));
 	}
 
 }

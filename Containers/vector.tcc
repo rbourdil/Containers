@@ -49,10 +49,10 @@ vector<T, Allocator>::insert(iterator p, const value_type& t)
 	// check if there is enough room in current allocation
 	if (_markers._end != _markers._last)
 	{
+		value_type	current = t;
+		value_type	forward;
 		if (p != end()) // insert inside the vector
 		{
-			value_type	current = t;
-			value_type	forward;
 			while (p != end())
 			{
 				forward = *p;
@@ -61,7 +61,7 @@ vector<T, Allocator>::insert(iterator p, const value_type& t)
 				p++;
 			}
 		}
-		_alloc.construct(_markers._end, t); // append
+		_alloc.construct(_markers._end, current); // append
 		_markers._end++;
 	}
 	else // need to allocate more room
@@ -92,16 +92,17 @@ void vector<T, Allocator>::fill_insert(iterator p, size_type n, const value_type
 		// insertion inside the vector
 		if (p != end())
 		{
-			pointer		tmp = _alloc.allocate(n);
+			size_type	block_len = ft::distance(p, end());
+			pointer		tmp = _alloc.allocate(block_len);
 			iterator	tmp_start = iterator(tmp);
-			iterator	tmp_end = std::uninitialized_copy(p, p + n, tmp_start);
+			iterator	tmp_end = std::uninitialized_copy(p, end(), tmp_start);
 			for (i = 0; i < n && p != end(); i++)
 				*p++ = t;
 			for (; i < n; i++, p++)
 				_alloc.construct(_markers._start + (p - begin()), t);
-			std::uninitialized_copy(tmp_start, tmp_end, p + n);
+			std::uninitialized_copy(tmp_start, tmp_end, p);
 			ft::destroy(tmp_start, tmp_end, _alloc);
-			_alloc.deallocate(tmp, n);
+			_alloc.deallocate(tmp, block_len);
 			_markers._end += n;
 		}
 		else // copy at the end of the vector
@@ -133,7 +134,7 @@ template <typename T, typename Allocator>
 template <typename _Iter>
 void vector<T, Allocator>::range_insert(iterator p, _Iter i, _Iter j)
 {
-	size_type	n = j - i;
+	size_type	n = ft::distance(i, j);
 	size_type	k;
 	// check if there is enough room in current allocation
 	if ((_markers._end + n) <= _markers._last)

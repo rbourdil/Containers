@@ -126,11 +126,6 @@ namespace ft {
 				return (tmp);
 			}
 
-			difference_type	operator-(const rand_access_iterator comp) const
-			{
-				return (_current - comp._current);
-			}
-
 			reference	operator[](difference_type n) const
 			{
 				return (*(_current + n));
@@ -177,6 +172,31 @@ namespace ft {
 	/***************************************/
 	/* Random Access iterator requirements */
 	/***************************************/
+
+	template <typename Iterator, typename Container>
+	rand_access_iterator<Iterator, Container>
+		operator+(typename rand_access_iterator<Iterator, Container>::difference_type n, const rand_access_iterator<Iterator, Container>& i)
+	{
+		return (rand_access_iterator<Iterator, Container>(i.base() + n));
+	}
+
+	template <typename Iterator, typename Container>
+	typename rand_access_iterator<Iterator, Container>::difference_type
+		operator-(const rand_access_iterator<Iterator, Container>& l,
+			const rand_access_iterator<Iterator, Container>& r)
+	{
+		return (l.base() - r.base());
+	}
+
+	// necessary for const and normal comparison
+	template <typename IteratorL, typename IteratorR, typename Container>
+	typename rand_access_iterator<IteratorL, Container>::difference_type
+		operator-(const rand_access_iterator<IteratorL, Container>& l,
+			const rand_access_iterator<IteratorR, Container>& r)
+	{
+		return (l.base() - r.base());
+	}
+
 
 	template <typename IteratorL, typename IteratorR, typename Container>
 	inline bool	operator<(const rand_access_iterator<IteratorL, Container>& l,
