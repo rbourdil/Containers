@@ -77,7 +77,7 @@ namespace ft {
 			vector(_Iter first, _Iter last)
 			{
 				typedef typename ft::is_integral<_Iter>::type	isInt;
-				copy_initialize(first, last, isInt());
+				select_initialize(first, last, isInt());
 			}
 
 			// Destructor
@@ -98,6 +98,11 @@ namespace ft {
 			{
 				erase(begin(), end());
 				insert(begin(), n, t);
+			}
+
+			allocator_type	get_allocator(void) const
+			{
+				return (allocator_type(_alloc));
 			}
 
 			iterator	begin(void)
@@ -214,9 +219,8 @@ namespace ft {
 				// if the element to erase is not at the end
 				if (pos + 1 != end())
 					std::copy(pos + 1, end(), pos);
-				else
-					ft::destroy(pos, pos + 1, _alloc);
 				_markers._end--;
+				_alloc.destroy(__builtin_addressof(*end()));
 				return (pos);
 			}
 
@@ -312,15 +316,32 @@ namespace ft {
 			}
 
 			template <typename Integer>
-			void	copy_initialize(Integer n, Integer t, ft::true_type)
+			void	select_initialize(Integer n, Integer t, ft::true_type)
 			{
 				if (static_cast<size_type>(n) > max_size())
 					throw std::length_error("Tried to allocate over max size");
 				fill_initialize(n, t);
 			}
 
-			template <typename InputIt>
-			void	copy_initialize(InputIt first, InputIt last, ft::false_type)
+			template <typename _Iter>
+			void	select_initialize(_Iter first, _Iter last, ft::false_type)
+			{
+				copy_initialize(first, last, typename ft::iterator_traits<_Iter>::iterator_category());
+			}
+
+
+			template <typename _InputIter>
+			void	copy_initialize(_InputIter first, _InputIter last, std::input_iterator_tag)
+			{
+				while (first != last)
+				{
+					push_back(*first);
+					++first;
+				}
+			}
+
+			template <typename _FwdIter>
+			void	copy_initialize(_FwdIter first, _FwdIter last, std::forward_iterator_tag)
 			{
 				const size_type	n = ft::distance(first, last);
 
@@ -352,13 +373,16 @@ namespace ft {
 			template <typename _Iter>
 			void	select_insert(iterator p, _Iter i, _Iter j, false_type)
 			{
-				range_insert(p, i, j);
+				range_insert(p, i, j, typename ft::iterator_traits<_Iter>::iterator_category());
 			}
 			
 			void	fill_insert(iterator p, size_type n, const value_type& t);
-			template <typename _Iter>
 
-			void	range_insert(iterator p, _Iter i, _Iter j);
+			// Overload needed as insertion is done differently for input iterators and forward iterators
+			template <typename _Iter>
+			void	range_insert(iterator p, _Iter i, _Iter j, std::input_iterator_tag);
+			template <typename _Iter>
+			void	range_insert(iterator p, _Iter i, _Iter j, std::forward_iterator_tag);
 
 			template <typename _Iter>
 			void __assign(_Iter first, _Iter last, false_type)

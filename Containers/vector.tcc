@@ -44,22 +44,19 @@ template <typename T, typename Allocator>
 typename vector<T, Allocator>::iterator
 vector<T, Allocator>::insert(iterator p, const value_type& t)
 {
-	size_type	n = p - begin();
+	size_type	n = ft::distance(begin(), p);
 
 	// check if there is enough room in current allocation
 	if (_markers._end != _markers._last)
 	{
 		value_type	current = t;
 		value_type	forward;
-		if (p != end()) // insert inside the vector
+		while (p != end()) // insert inside the vector
 		{
-			while (p != end())
-			{
-				forward = *p;
-				*p = current;
-				current = forward;
-				p++;
-			}
+			forward = *p;
+			*p = current;
+			current = forward;
+			p++;
 		}
 		_alloc.construct(_markers._end, current); // append
 		_markers._end++;
@@ -87,7 +84,7 @@ void vector<T, Allocator>::fill_insert(iterator p, size_type n, const value_type
 {
 	size_type	i;
 	// check if there is enough room in current allocation
-	if ((_markers._end + n) <= _markers._last)
+	if (static_cast<size_type>(_markers._last - _markers._end) >= n)
 	{
 		// insertion inside the vector
 		if (p != end())
@@ -100,8 +97,10 @@ void vector<T, Allocator>::fill_insert(iterator p, size_type n, const value_type
 				*p++ = t;
 			for (; i < n; i++, p++)
 				_alloc.construct(_markers._start + (p - begin()), t);
+			for (; p != end(); p++, tmp_start++)
+				*p = *tmp_start;
 			ft::_my_uninitialized_copy(tmp_start, tmp_end, p, _alloc);
-			ft::destroy(tmp_start, tmp_end, _alloc);
+			ft::destroy(iterator(tmp), tmp_end, _alloc);
 			safe_deallocate(tmp, block_len);
 			_markers._end += n;
 		}
@@ -132,7 +131,26 @@ void vector<T, Allocator>::fill_insert(iterator p, size_type n, const value_type
 
 template <typename T, typename Allocator>
 template <typename _Iter>
-void vector<T, Allocator>::range_insert(iterator p, _Iter i, _Iter j)
+void	vector<T, Allocator>::range_insert(iterator p, _Iter i, _Iter j, std::input_iterator_tag)
+{
+	if (p == end())
+	{
+		while (i != j)
+		{
+			insert(end(), *i);
+			++i;
+		}
+	}
+	else if (i != j)
+	{
+		vector	tmp(i, j);
+		insert(p, tmp.begin(), tmp.end());
+	}
+}
+
+template <typename T, typename Allocator>
+template <typename _Iter>
+void vector<T, Allocator>::range_insert(iterator p, _Iter i, _Iter j, std::forward_iterator_tag)
 {
 	size_type	n = ft::distance(i, j);
 	size_type	k;
