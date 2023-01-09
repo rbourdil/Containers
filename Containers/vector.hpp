@@ -447,6 +447,12 @@ namespace ft {
 		return (!ft::lexicographical_compare(op1.begin(), op1.end(), op2.begin(), op2.end()));
 	}
 
+	template <typename T, typename Alloc>
+	void	swap(vector<T, Alloc>&x, vector<T, Alloc>& y)
+	{
+		x.swap(y);
+	}
+
 }
 
 #include "vector.tcc"
