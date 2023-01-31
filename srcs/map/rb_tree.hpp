@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstddef>
+#include <algorithm>
 
 #include "../alloc_help.hpp"
 
@@ -117,12 +118,12 @@ struct	rb_tree_iterator
 		return (tmp);
 	}
 
-	bool	operator==(const self& comp)
+	bool	operator==(const self& comp) const
 	{
 		return (_node == comp._node);
 	}
 
-	bool	operator!=(const self& comp)
+	bool	operator!=(const self& comp) const
 	{
 		return (_node != comp._node);
 	}
@@ -145,6 +146,95 @@ struct	rb_tree_iterator
 	node_ptr	_node;
 
 };
+
+template <typename Key, typename T>
+struct	const_rb_tree_iterator
+{
+	typedef const T			value_type;
+	typedef const T&			reference;
+	typedef const T*			pointer;
+	typedef std::bidirectional_iterator_tag	iterator_category;
+	typedef ptrdiff_t	difference_type;
+
+	typedef	const rb_node<Key, T>*	const_node_ptr;
+	typedef const_rb_tree_iterator<Key, T>	self;
+	typedef rb_tree_iterator<Key, T>	iterator;
+
+	public:
+
+	// constructors/destructor
+
+	const_rb_tree_iterator() :
+		_node()
+		{ }
+
+	const_rb_tree_iterator(const_node_ptr node) :
+		_node(node)
+		{ }
+	
+	const_rb_tree_iterator(const iterator& from) :
+		_node(from._node)
+		{ }
+
+	~const_rb_tree_iterator(void) { }
+
+
+	// iterator requirements
+
+	reference	operator*(void) const
+	{
+		return (_node->_val);
+	}
+
+	self&	operator++(void)
+	{
+		_node = _rb_tree_successor(_node);
+		return (*this);
+	}
+
+	// input iterator requirements
+
+	pointer	operator->(void) const
+	{
+		return (&_node->_val);
+	}
+
+	self	operator++(int)
+	{
+		self	tmp = *this;
+		_node = _rb_tree_successor(_node);
+		return (tmp);
+	}
+
+	bool	operator==(const self& comp) const
+	{
+		return (_node == comp._node);
+	}
+
+	bool	operator!=(const self& comp) const
+	{
+		return (_node != comp._node);
+	}
+
+	// bidirectional iterator requirements
+
+	self&	operator--(void)
+	{
+		_node = _rb_tree_predecessor(_node);
+		return (*this);
+	}
+
+	self	operator--(int)
+	{
+		self	tmp = *this;
+		_node = rb_tree_predecessor(_node);
+		return (tmp);
+	}
+
+	const_node_ptr	_node;
+
+};
+
 
 template <typename Key, typename T>
 bool	_is_null_node(rb_node<Key, T>* node)
@@ -185,7 +275,35 @@ rb_node<Key, T>*	_rb_tree_successor(rb_node<Key, T>* x)
 }
 
 template <typename Key, typename T>
+const rb_node<Key, T>*	_rb_tree_successor(const rb_node<Key, T>* x)
+{
+	if (!_is_null_node(x->_right))
+		return (_tree_minimum(x->_right));
+	rb_node<Key, T>*	y = x->_p;
+	while (!_is_null_node(y) && x == y->_right)
+	{
+		x = y;
+		y = y->_p;
+	}
+	return (y);
+}
+
+template <typename Key, typename T>
 rb_node<Key, T>*	_rb_tree_predecessor(rb_node<Key, T>* x)
+{
+	if (!_is_null_node(x->_left))
+		return (_tree_maximum(x->_left));
+	rb_node<Key, T>*	y = x->_p;
+	while (!_is_null_node(y) && x == y->_left)
+	{
+		x = y;
+		y = y->_p;
+	}
+	return (y);
+}
+
+template <typename Key, typename T>
+const rb_node<Key, T>*	_rb_tree_predecessor(const rb_node<Key, T>* x)
 {
 	if (!_is_null_node(x->_left))
 		return (_tree_maximum(x->_left));
@@ -223,6 +341,13 @@ struct rb_tree_header
 		Allocator().deallocate(__builtin_addressof(*_null), 1);
 	}
 
+	void	reset(void)
+	{
+		_root = _null;
+		_begin = NULL;
+		_size = 0;
+	}
+
 	node_ptr	_root;
 	node_ptr	_begin;
 	node_ptr	_null;
@@ -239,12 +364,40 @@ class rb_tree
 	public:
 
 	typedef rb_tree_iterator<Key, T>		iterator;
+	typedef const_rb_tree_iterator<Key, T>	const_iterator;
 
 	// constructors/destructor
 
 	rb_tree(void) { }
 
-	// rb tree operations
+	rb_tree(const rb_tree& from) :
+		_comp(from._comp),
+		_alloc(from._alloc)
+	{
+		_rb_tree_copy(from.get_root(), from._head._null);
+	}
+
+	// rb tree modifiers
+
+	void	clear(void)
+	{
+		_delete_all_nodes(_head._root);
+		_head.reset();
+	}
+
+	iterator	find(const Key& key)
+	{
+		node_ptr	x = _head._root;
+
+		while (x != _head._null && x->_key != key)
+		{
+			if (_comp(x->_key, key))
+				x = x->_right;
+			else
+				x = x->_left;
+		}
+		return (x);
+	}
 
 	iterator	insert(const Key& key, const T& val)
 	{
@@ -292,7 +445,17 @@ class rb_tree
 		return (_head._begin);
 	}
 
+	const_iterator	begin(void) const
+	{
+		return (_head._begin);
+	}
+
 	iterator	end(void)
+	{
+		return (_head._null);
+	}
+
+	const_iterator	end(void) const
 	{
 		return (_head._null);
 	}
@@ -300,7 +463,7 @@ class rb_tree
 
 	// helper functions 
 
-	size_type	check_len(size_type n)
+	size_type	check_len(size_type n) const
 	{
 		if (max_size() - size() < n)
 			throw std::length_error("Tried to allocate over maximum size");
@@ -311,12 +474,12 @@ class rb_tree
 	}
 
 	// debug
-	node_ptr	get_root(void)
+	node_ptr	get_root(void) const
 	{
 		return (_head._root);
 	}
 
-	void	print(node_ptr root)
+	void	print(node_ptr root) const
 	{
 		if (root != _head._null)
 		{
@@ -574,6 +737,8 @@ class rb_tree
 		y->_p = x;
 	}
 
+	// allocate/deallocate
+
 	node_ptr	_get_node(const Key& key, const T& val)
 	{
 		node_ptr	ret = _alloc.allocate(1);
@@ -587,6 +752,26 @@ class rb_tree
 		{
 			_alloc.destroy(__builtin_addressof(*x));
 			_alloc.deallocate(__builtin_addressof(*x), 1);
+		}
+	}
+
+	void	_delete_all_nodes(node_ptr x)
+	{
+		if (x != _head._null)
+		{
+			_delete_all_nodes(x->_left);
+			_delete_all_nodes(x->_right);
+			_delete_node(x);
+		}
+	}
+
+	void	_rb_tree_copy(node_ptr x, node_ptr null)
+	{
+		if (x != null)
+		{
+			insert(x->_key, x->_val);
+			_rb_tree_copy(x->_right, null);
+			_rb_tree_copy(x->_left, null);
 		}
 	}
 
@@ -661,6 +846,14 @@ class rb_tree
 
 };
 
+template <typename mapL, typename mapR>
+bool	operator==(const mapL& left, const mapR& right)
+{
+	if (left.size() != right.size())
+		return (false);
+	return (std::equal(left.begin(), left.end(), right.begin()));
+}
+	
 } // namespace ft
 
 #endif
