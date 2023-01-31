@@ -4,11 +4,18 @@
 #include <memory>
 #include <fuctional>
 
+#include "rb_tree.hpp"
+
 namespace ft {
 
 template <class Key, class T, class Compare = less<Key>,
 		class Allocator = allocator<pair<const Key, T> > >
 class map {
+
+	private:
+		typedef rb_tree<Key, T, Compare, Allocator>	_tree_type;
+
+		tree_type	_tree_base;
 
 	public:
 		typedef Key						key_type;
@@ -16,16 +23,16 @@ class map {
 		typedef pair<const Key, T>		value_type;
 		typedef Compare					key_compare;
 		typedef Allocator				allocator_type;
-		typedef typename Allocator::reference	reference;
-		typedef typename Allocator::const_reference	const_reference;
-		typedef ...						iterator;
-		typedef ...						const_iterator;
-		typedef ...						size_type;
-		typedef ...						difference_type;
-		typedef typename Allocator::pointer	pointer;
-		typedef typename Allocator::const_pointer	const_pointer;
-		typedef typename ft::reverse_iterator<iterator>	reverse_iterator;
-		typedef typename ft::reverse_iterator<const_iterator>	const_reverse_iterator;
+		typedef value_type&				reference;
+		typedef const value_type&		const_reference;
+		typedef typename _tree_type::iterator		iterator;
+		typedef typename _tree_type::const_iterator	const_iterator;
+		typedef typename _tree_type::size_type		size_type;
+		typedef typename _tree_type::difference_type	difference_type;
+		typedef typename std::allocator_traits<Allocator>::pointer	pointer;
+		typedef typename std::allocator_traits<Allocator>::const_pointer	const_pointer;
+		typedef typename _tree_type::reverse_iterator	reverse_iterator;
+		typedef typename _tree_type::const_reverse_iterator	const_reverse_iterator;
 
 		class	value_compare
 			: public binary_function<value_type, value_type, bool> {
@@ -45,58 +52,118 @@ class map {
 
 		// construct/copy/destroy
 
-		explicit map(const Compare& comp = Compare(), const Allocator& = Allocator());
+		explicit map(const Compare& comp = Compare(), const Allocator& alloc = Allocator()) :
+			_tree_base(comp, alloc)
+			{ }
 
 		template <class InputIterator>>
 		map(InputIterator first, InputIterator last,
-			const Compare& comp = Compare(), const Allocator& = Allocator());
+			const Compare& comp = Compare(), const Allocator& = Allocator()) :
+			_tree_base(first, last)
+			{ }
 
-		map(const map<Key, T, Compare, Allocator>& x);
+		map(const map& x) :
+			_tree_base(map._tree_base)
+			{ }
 
 		~map();
 
-		map<Key, T, Compare, Allocator>&
-			operator=(const map<Key, T, Compare, Allocator>& x);
+		map&	operator=(const map& x)
+		{
+			_tree_base = x._tree_base;
+			return (*this);
+		}
 		
+		allocator_type	get_allocator(void) const
+		{
+			return (_tree_base.get_allocator());
+		}
 
 		//iterators
 
-		iterator	begin();
+		iterator	begin()
+		{
+			return (_tree_base.begin());
+		}
 
-		const_iterator	begin() const;
+		const_iterator	begin() const
+		{
+			return (_tree_base.begin());
+		}
 
-		iterator	end();
+		iterator	end()
+		{
+			return (_tree_base.end());
+		}
 
-		const_iterator	end() const;
+		const_iterator	end() const
+		{
+			return (_tree_base.end());
+		}
 
-		reverse_iterator	rbegin();
+		reverse_iterator	rbegin()
+		{
+			return (_tree_base.rbegin());
+		}
 
-		const_reverse_iterator	rbegin() const;
+		const_reverse_iterator	rbegin() const
+		{
+			return (_tree_base.rbegin());
+		}
 
-		reverse_iterator	rend();
+		reverse_iterator	rend()
+		{
+			return (_tree_base.rend());
+		}
 
-		const_reverse_iterator	rend() const;
+		const_reverse_iterator	rend() const
+		{
+			return (_tree_base.rend());
+		}
 
 
 		// capacity
 
-		bool	empty() const;
+		bool	empty() const
+		{
+			return (_tree_base.empty());
+		}
 
-		size_type	size() const;
+		size_type	size() const
+		{
+			return (_tree_base.size());
+		}
 
-		size_type	max_size()	const;
+		size_type	max_size()	const
+		{
+			return (_tree_base.max_size());
+		}
 
 
 		// element access
 
-		T&	operator[](const key_type& x);
+		T&	operator[](const key_type& x)
+		{
+			return (_tree_base.find(x)->second);
+		}
+
+		T&	at(const key_type& x)
+		{
+			return (_tree_base.find(x)->second);
+		}
 
 
 		// modifiers
 
-		pair<iterator, bool>	insert(const value_type& x);
+		pair<iterator, bool>	insert(const value_type& x)
+		{
+			return (_tree_base._insert_pair(x));
+		}
 		
-		iterator	insert(iterator position, const value_type& x);
+		iterator	insert(iterator position, const value_type& x)
+		{
+			return (
+			//HHHHHEHRHEHHREKJLFJDSJFDSKJHFJDSHJFDSH
 
 		template <class InputIterator>
 			void	insert(InputIterator first, InputIterator last);

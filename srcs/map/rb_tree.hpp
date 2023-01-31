@@ -8,6 +8,9 @@
 #include <algorithm>
 
 #include "../alloc_help.hpp"
+#include "../algorithm.hpp"
+#include "../iterator/iterator_adaptors.hpp"
+#include "pair.hpp"
 
 namespace ft {
 
@@ -34,7 +37,8 @@ struct rb_node {
 		_val(val),
 		_left(NULL),
 		_right(NULL),
-		_p(NULL)
+		_p(NULL),
+		_key_val(key, val)
 		{ }
 	
 	rb_node(const rb_node& from) :
@@ -43,7 +47,8 @@ struct rb_node {
 		_val(from._val),
 		_left(from._left),
 		_right(from._right),
-		_p(from._p)
+		_p(from._p),
+		_key_val(from._key_val)
 		{ }
 	
 	rb_tree_color	_color;
@@ -52,14 +57,15 @@ struct rb_node {
 	node_ptr		_left;
 	node_ptr		_right;
 	node_ptr		_p;
+	ft::pair<Key, T>	_key_val;
 };
 
 template <typename Key, typename T>
 struct	rb_tree_iterator
 {
-	typedef T			value_type;
-	typedef T&			reference;
-	typedef T*			pointer;
+	typedef ft::pair<Key, T>	value_type;
+	typedef value_type&			reference;
+	typedef value_type*			pointer;
 	typedef std::bidirectional_iterator_tag	iterator_category;
 	typedef ptrdiff_t	difference_type;
 
@@ -95,7 +101,7 @@ struct	rb_tree_iterator
 
 	reference	operator*(void) const
 	{
-		return (_node->_val);
+		return (_node->_key_val);
 	}
 
 	self&	operator++(void)
@@ -108,7 +114,7 @@ struct	rb_tree_iterator
 
 	pointer	operator->(void) const
 	{
-		return (&_node->_val);
+		return (&_node->_key_val);
 	}
 
 	self	operator++(int)
@@ -143,16 +149,16 @@ struct	rb_tree_iterator
 		return (tmp);
 	}
 
+	private:
 	node_ptr	_node;
-
 };
 
 template <typename Key, typename T>
 struct	const_rb_tree_iterator
 {
-	typedef const T			value_type;
-	typedef const T&			reference;
-	typedef const T*			pointer;
+	typedef const ft::pair<Key, T>	value_type;
+	typedef const value_type&		reference;
+	typedef const value_type*		pointer;
 	typedef std::bidirectional_iterator_tag	iterator_category;
 	typedef ptrdiff_t	difference_type;
 
@@ -183,7 +189,7 @@ struct	const_rb_tree_iterator
 
 	reference	operator*(void) const
 	{
-		return (_node->_val);
+		return (_node->_key_val);
 	}
 
 	self&	operator++(void)
@@ -196,7 +202,7 @@ struct	const_rb_tree_iterator
 
 	pointer	operator->(void) const
 	{
-		return (&_node->_val);
+		return (&_node->_key_val);
 	}
 
 	self	operator++(int)
@@ -231,8 +237,8 @@ struct	const_rb_tree_iterator
 		return (tmp);
 	}
 
+	private:
 	const_node_ptr	_node;
-
 };
 
 
@@ -346,6 +352,7 @@ struct rb_tree_header
 		_root = _null;
 		_begin = NULL;
 		_size = 0;
+		_null->_left = _null;
 	}
 
 	node_ptr	_root;
@@ -365,6 +372,8 @@ class rb_tree
 
 	typedef rb_tree_iterator<Key, T>		iterator;
 	typedef const_rb_tree_iterator<Key, T>	const_iterator;
+	typedef ft::reverse_iterator<iterator>		reverse_iterator;
+	typedef ft::reverse_iterator<const iterator>	const_reverse_iterator;
 
 	// constructors/destructor
 
@@ -377,15 +386,54 @@ class rb_tree
 		_rb_tree_copy(from.get_root(), from._head._null);
 	}
 
-	// rb tree modifiers
-
-	void	clear(void)
+	explicit rb_tree(const Compare& comp, const Allocator& alloc) :
+		_comp(comp),
+		_alloc(alloc)
+		{ }
+	
+	template <typename InputIterator>
+	rb_tree(InputIterator first, InputIterator last, const Compare& comp, const Allocator& alloc) :
+		_comp(comp),
+		_alloc(alloc)
 	{
-		_delete_all_nodes(_head._root);
-		_head.reset();
+		_rb_tree_copy_range(first, last);
 	}
 
-	iterator	find(const Key& key)
+	~rb_tree(void)
+	{
+		_delete_all_nodes(_head._root);
+	}
+
+	rb_tree&	operator=(const rb_tree& from)
+	{
+		clear();
+		_rb_tree_copy_range(from.begin(), from.end());
+	}
+
+	Allocator	get_allocator(void) const
+	{
+		return (_alloc);
+	}
+
+
+	// lookup
+
+	size_type	count(const Key& key) const
+	{
+		node_ptr	x = _head._begin;
+		size_type	count = 0;
+
+		while (x != _head._null && _comp(x->_key, key))
+			x = _rb_tree_successor(x);
+		while (x != _head._null && !_comp(key, x->_key))
+		{
+			x = _rb_tree_successor(x);
+			count++;
+		}
+		return (count);
+	}
+
+	iterator	find(const Key& key) const
 	{
 		node_ptr	x = _head._root;
 
@@ -399,16 +447,94 @@ class rb_tree
 		return (x);
 	}
 
-	iterator	insert(const Key& key, const T& val)
+	iterator	lower_bound(const Key& key)
+	{
+		node_ptr	x = _head._begin;
+
+		while (x != _head._null && _comp(x->_key, key))
+			x = _rb_tree_successor(x);
+		return (x);
+	}
+
+	const iterator	lower_bound(const Key& key) const
+	{
+		node_ptr	x = _head._begin;
+
+		while (x != _head._null && _comp(x->_key, key))
+			x = _rb_tree_successor(x);
+		return (x);
+	}
+
+	iterator	upper_bound(const Key& key)
+	{
+		node_ptr	x = _head._begin;
+
+		while (x != _head._null && !_comp(key, x->_key))
+			x = _rb_tree_successor(x);
+		return (x);
+	}
+
+	const iterator	upper_bound(const Key& key) const
+	{
+		node_ptr	x = _head._begin;
+
+		while (x != _head._null && !_comp(key, x->_key))
+			x = _rb_tree_successor(x);
+		return (x);
+	}
+
+	ft::pair<iterator, iterator>	equal_range(const Key& key)
+	{
+		node_ptr	x = _head._begin;
+
+		while (x != _head._null && _comp(x->_key, key))
+			x = _rb_tree_successor(x);
+		iterator	low(x);
+		while (x != _head._null && !_comp(key, x->_key))
+			x = _rb_tree_successor(x);
+		iterator	up(x);
+		return (ft::make_pair(low, up));
+	}
+
+	ft::pair<const_iterator, const_iterator>	equal_range(const Key& key) const
+	{
+		node_ptr	x = _head._begin;
+
+		while (x != _head._null && _comp(x->_key, key))
+			x = _rb_tree_successor(x);
+		const_iterator	low(x);
+		while (x != _head._null && !_comp(key, x->_key))
+			x = _rb_tree_successor(x);
+		const_iterator	up(x);
+		return (ft::make_pair(low, up));
+	}
+
+
+	// rb tree modifiers
+
+	void	clear(void)
+	{
+		_delete_all_nodes(_head._root);
+		_head.reset();
+	}
+
+	ft::pair<iterator, bool>	insert(const Key& key, const T& val)
 	{
 		node_ptr	in_node;
+		node_ptr	tmp_node;
 
 		in_node = _get_node(key, val);
-		_rb_tree_insert(in_node);
+		if ((tmp_node = _rb_tree_insert(in_node)) != in_node)
+		{
+			_delete_node(in_node);
+			return (ft::make_pair(iterator(tmp_node), false));
+		}
 		if (_head._begin == NULL || in_node == _rb_tree_predecessor(_head._begin))
 			_head._begin = in_node;
+		if (_head._null->_left == _head._null || in_node == _rb_tree_successor(_head._null->_left))
+			_head._null->_left = in_node;
 		_head._size++;
-		return (in_node);
+		return (ft::make_pair(iterator(in_node), true));
 	}
 
 	void	erase(iterator pos)
@@ -416,9 +542,21 @@ class rb_tree
 		node_ptr	pos_node = pos._node;
 		if (pos_node == _head._begin)
 			_head._begin = _rb_tree_successor(_head._begin);
+		if (pos_node == _head._null->_left)
+			_head._null._left = _rb_tree_predecessor(_head._null->_left);
 		_rb_tree_delete(pos_node);
 		_delete_node(pos_node);
 		_head._size--;
+	}
+
+	void	swap(rb_tree& other)
+	{
+		std::swap(_head._root, other._head._root);
+		std::swap(_head._begin, other._head._begin);
+		std::swap(_head._null, other._head._null);
+		size_type	tmp_size = _head._size;
+		_head._size = other._head._size;
+		other._head._size = tmp_size;
 	}
 
 	// capacity
@@ -460,17 +598,24 @@ class rb_tree
 		return (_head._null);
 	}
 
-
-	// helper functions 
-
-	size_type	check_len(size_type n) const
+	reverse_iterator	rbegin(void)
 	{
-		if (max_size() - size() < n)
-			throw std::length_error("Tried to allocate over maximum size");
-		const size_type	len = size() + std::max(size(), n);
-		if (len > max_size() || len < size())
-			return (max_size());
-		return (len);
+		return (reverse_iterator(_head._null));
+	}
+
+	const_reverse_iterator	rbegin(void) const
+	{
+		return (const_reverse_iterator(_head._null));
+	}
+
+	reverse_iterator	rend(void)
+	{
+		return (reverse_iterator(_head._begin));
+	}
+
+	const_reverse_iterator	rend(void) const
+	{
+		return (const_reverse_iterator(_head._begin));
 	}
 
 	// debug
@@ -495,7 +640,7 @@ class rb_tree
 	// insert helper functions
 
 	// actual insert function
-	void	_rb_tree_insert(node_ptr z)
+	node_ptr	_rb_tree_insert(node_ptr z)
 	{
 		node_ptr	y = _head._null;
 		node_ptr	x = _head._root;
@@ -505,8 +650,10 @@ class rb_tree
 			y = x;
 			if (_comp(z->_key, x->_key))
 				x = x->_left;
-			else
+			else if (_comp(x->_key, z->_key))
 				x = x->_right;
+			else
+				return (x);
 		}
 		z->_p = y;
 		if (y == _head._null)
@@ -519,6 +666,7 @@ class rb_tree
 		z->_right = _head._null;
 		z->_color = red;
 		_rb_tree_color_fixup(z);
+		return (z);
 	}
 
 	void	_rb_tree_color_fixup(node_ptr z)
@@ -573,6 +721,12 @@ class rb_tree
 			}
 		}
 		_head._root->_color = black;
+	}
+
+	template <typename PairType>
+	void	_insert_pair(const PairType& pair)
+	{
+		insert(pair.first, pair.second);
 	}
 
 	// delete helper functions
@@ -775,69 +929,15 @@ class rb_tree
 		}
 	}
 
-	/*
-	// struct that contains current allocation of nodes
-	struct	node_pool
+	template <Iter>
+	void	_rb_tree_copy_range(Iter first, Iter last)
 	{
-		node_pool(rb_tree& orig_tree) :
-			_start(NULL),
-			_current(NULL),
-			_last(NULL),
-			_tree(orig_tree)
-			{ }
-
-		~node_pool(void)
+		while (first != last)
 		{
-			destroy(_start, _current, _alloc);
-			_alloc.deallocate(_start, _last - _start);
+			_insert_pair(*first);
+			++first;
 		}
-
-		node_ptr	get_node(const Key& key, const T& val)
-		{
-			if (_start == NULL) // first allocation
-			{
-				_start = _alloc.allocate(1);
-				_current = _start;
-				_last = _start + 1;
-				_alloc.construct(_current, rb_node<Key, T>(key, val));
-			}
-			else if (_current != _last) // enough room, just construct
-				_alloc.construct(_current, rb_node<Key, T>(key, val));
-			else // need to reallocate
-			{
-				size_type	n = _last - _start;
-				size_type	new_size = _tree.check_len(1);
-				node_ptr	new_start = _alloc.allocate(new_size);
-				node_ptr	new_last = new_start + new_size;
-				node_ptr	new_current = new_start;
-
-				_tree._head.reset();
-				for (node_ptr p = _start; p != _current; p++, new_current++)
-				{
-					_alloc.construct(__builtin_addressof(*new_current), *p);
-					_tree._rb_tree_insert(new_current);
-					_alloc.destroy(__builtin_addressof(*p));
-				}
-				_alloc.construct(__builtin_addressof(*new_current), rb_node<Key, T>(key, val));
-				// reset the begin pointer "manually"
-				_tree._head._begin = _tree_minimum(_tree._head._root);
-
-				_alloc.deallocate(_start, n);
-
-				_start = new_start;
-				_current = new_current;
-				_last = new_last;
-			}
-			return (_current++);
-		}
-
-		node_ptr	_start;
-		node_ptr	_current;
-		node_ptr	_last;
-		Allocator	_alloc;
-		rb_tree&	_tree;
-	};
-	*/
+	}
 
 	// attributes
 	rb_tree_header<Key, T, Allocator>	_head;
@@ -846,6 +946,8 @@ class rb_tree
 
 };
 
+// Comparison operators 
+
 template <typename mapL, typename mapR>
 bool	operator==(const mapL& left, const mapR& right)
 {
@@ -853,7 +955,37 @@ bool	operator==(const mapL& left, const mapR& right)
 		return (false);
 	return (std::equal(left.begin(), left.end(), right.begin()));
 }
-	
+
+template <typename mapL, typename mapR>
+bool	operator!=(const mapL& left, const mapR& right)
+{
+	return (!(left == right));
+}
+
+template <typename mapL, typename mapR>
+bool	operator<(const mapL& left, const mapR& right)
+{
+	return (ft::lexicographical_compare(left.begin(), left.end(), right.begin(), right.end()));
+}
+
+template <typename mapL, typename mapR>
+bool	operator>=(const mapL& left, const mapR& right)
+{
+	return (!ft::lexicographical_compare(left.begin(), left.end(), right.begin(), right.end()));
+}
+
+template <typename mapL, typename mapR>
+bool	operator>(const mapL& left, const mapR& right)
+{
+	return (ft::lexicographical_compare(right.begin(), right.end(), left.begin(), left.end()));
+}
+
+template <typename mapL, typename mapR>
+bool	operator<=(const mapL& left, const mapR& right)
+{
+	return (!ft::lexicographical_compare(right.begin(), right.end(), left.begin(), left.end()));
+}
+
 } // namespace ft
 
 #endif
