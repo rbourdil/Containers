@@ -15,6 +15,7 @@
 namespace ft {
 
 enum rb_tree_color { red = false, black = true };
+enum null_marker { not_null = false, null = true };
 
 // node struct used as base type for the tree
 template <typename Key, typename T>
@@ -24,6 +25,7 @@ struct rb_node {
 
 	rb_node() :
 		_color(),
+		_is_null(),
 		_key(Key()),
 		_val(T()),
 		_left(NULL),
@@ -33,6 +35,7 @@ struct rb_node {
 	
 	rb_node(const Key& key, const T& val) :
 		_color(),
+		_is_null(not_null),
 		_key(key),
 		_val(val),
 		_left(NULL),
@@ -43,6 +46,7 @@ struct rb_node {
 	
 	rb_node(const rb_node& from) :
 		_color(from._color),
+		_is_null(from._is_null),
 		_key(from._key),
 		_val(from._val),
 		_left(from._left),
@@ -52,6 +56,7 @@ struct rb_node {
 		{ }
 	
 	rb_tree_color	_color;
+	null_marker		_is_null;
 	Key				_key;
 	T				_val;
 	node_ptr		_left;
@@ -124,14 +129,14 @@ struct	rb_tree_iterator
 		return (tmp);
 	}
 
-	bool	operator==(const self& comp) const
+	friend bool	operator==(const self& x, const self& y)
 	{
-		return (_node == comp._node);
+		return (x._node == y._node);
 	}
 
-	bool	operator!=(const self& comp) const
+	friend bool	operator!=(const self& x, const self& y)
 	{
-		return (_node != comp._node);
+		return (x._node != y._node);
 	}
 
 	// bidirectional iterator requirements
@@ -145,11 +150,10 @@ struct	rb_tree_iterator
 	self	operator--(int)
 	{
 		self	tmp = *this;
-		_node = rb_tree_predecessor(_node);
+		_node = _rb_tree_predecessor(_node);
 		return (tmp);
 	}
 
-	private:
 	node_ptr	_node;
 };
 
@@ -212,14 +216,14 @@ struct	const_rb_tree_iterator
 		return (tmp);
 	}
 
-	bool	operator==(const self& comp) const
+	friend bool	operator==(const self& x, const self& y)
 	{
-		return (_node == comp._node);
+		return (x._node == y._node);
 	}
 
-	bool	operator!=(const self& comp) const
+	friend bool	operator!=(const self& x, const self& y)
 	{
-		return (_node != comp._node);
+		return (x._node != y._node);
 	}
 
 	// bidirectional iterator requirements
@@ -233,7 +237,7 @@ struct	const_rb_tree_iterator
 	self	operator--(int)
 	{
 		self	tmp = *this;
-		_node = rb_tree_predecessor(_node);
+		_node = _rb_tree_predecessor(_node);
 		return (tmp);
 	}
 
@@ -241,11 +245,10 @@ struct	const_rb_tree_iterator
 	const_node_ptr	_node;
 };
 
-
 template <typename Key, typename T>
-bool	_is_null_node(rb_node<Key, T>* node)
+bool	_is_null_node(rb_node<Key, T>* x)
 {
-	if (node->_p == node)
+	if (x->_is_null == null)
 		return (true);
 	return (false);
 }
@@ -329,16 +332,17 @@ struct rb_tree_header
 	typedef rb_node<Key, T>*	node_ptr;
 
 	rb_tree_header(void) :
-		_begin(NULL),
 		_size(0)
 	{
 		_null = Allocator().allocate(1);
 		Allocator().construct(_null, rb_node<Key, T>());
 		_null->_color = black;
+		_null->_is_null = null;
 		_null->_left = _null;
 		_null->_right = _null;
 		_null->_p = _null;
 		_root = _null;
+		_begin = _null;
 	}
 
 	~rb_tree_header(void) 
@@ -350,7 +354,7 @@ struct rb_tree_header
 	void	reset(void)
 	{
 		_root = _null;
-		_begin = NULL;
+		_begin = _null;
 		_size = 0;
 		_null->_left = _null;
 	}
@@ -362,18 +366,19 @@ struct rb_tree_header
 };
 
 template <typename Key, typename T,
-	typename Compare, typename Allocator = std::allocator<rb_node<Key, T> > >
+	typename Compare, typename Allocator>
 class rb_tree
 {
+	public:
 	typedef	rb_node<Key, T>*				node_ptr;
 	typedef typename Allocator::size_type	size_type;
-
-	public:
-
+	typedef ptrdiff_t						difference_type;
+	typedef ft::pair<Key, T>				pair_type;
 	typedef rb_tree_iterator<Key, T>		iterator;
 	typedef const_rb_tree_iterator<Key, T>	const_iterator;
 	typedef ft::reverse_iterator<iterator>		reverse_iterator;
 	typedef ft::reverse_iterator<const iterator>	const_reverse_iterator;
+	typedef typename Allocator::template rebind<rb_node<Key, T> >::other	node_allocator;
 
 	// constructors/destructor
 
@@ -407,7 +412,9 @@ class rb_tree
 	rb_tree&	operator=(const rb_tree& from)
 	{
 		clear();
-		_rb_tree_copy_range(from.begin(), from.end());
+		if (from.size() != 0)
+			_rb_tree_copy_range(from.begin(), from.end());
+		return (*this);
 	}
 
 	Allocator	get_allocator(void) const
@@ -432,19 +439,33 @@ class rb_tree
 		}
 		return (count);
 	}
-
-	iterator	find(const Key& key) const
+	
+	iterator	find(const Key& key)
 	{
-		node_ptr	x = _head._root;
+		return (_find_node(key));
+	}
 
-		while (x != _head._null && x->_key != key)
-		{
-			if (_comp(x->_key, key))
-				x = x->_right;
-			else
-				x = x->_left;
-		}
-		return (x);
+	const_iterator	find(const Key& key) const
+	{
+		return (_find_node(key));
+	}
+
+	iterator	find_throw(const Key& key)
+	{
+		node_ptr	found = _find_node(key);
+
+		if (found == _head._null)
+			throw std::out_of_range("Key not found");
+		return (found);
+	}
+
+	const_iterator	find_throw(const Key& key) const
+	{
+		node_ptr	found = _find_node(key);
+
+		if (found == _head._null)
+			throw std::out_of_range("Key not found");
+		return (found);
 	}
 
 	iterator	lower_bound(const Key& key)
@@ -524,12 +545,12 @@ class rb_tree
 		node_ptr	tmp_node;
 
 		in_node = _get_node(key, val);
-		if ((tmp_node = _rb_tree_insert(in_node)) != in_node)
+		if ((tmp_node = _rb_tree_insert(in_node, _head._root)) != in_node)
 		{
 			_delete_node(in_node);
 			return (ft::make_pair(iterator(tmp_node), false));
 		}
-		if (_head._begin == NULL || in_node == _rb_tree_predecessor(_head._begin))
+		if (_head._begin == _head._null || in_node == _rb_tree_predecessor(_head._begin))
 			_head._begin = in_node;
 		if (_head._null->_left == _head._null || in_node == _rb_tree_successor(_head._null->_left))
 			_head._null->_left = in_node;
@@ -537,16 +558,67 @@ class rb_tree
 		return (ft::make_pair(iterator(in_node), true));
 	}
 
+	iterator	insert(iterator pos, const Key& key, const T& val)
+	{
+		node_ptr	pos_node = pos._node;
+		node_ptr	in_node = _get_node(key, val);
+		node_ptr	tmp_node;
+
+		if ((tmp_node = _rb_tree_insert(in_node, pos_node->_p)) != in_node)
+		{
+			_delete_node(in_node);
+			return (tmp_node);
+		}
+		if (_head._begin == NULL || in_node == _rb_tree_predecessor(_head._begin))
+			_head._begin = in_node;
+		if (_head._null->_left == _head._null || in_node == _rb_tree_successor(_head._null->_left))
+			_head._null->_left = in_node;
+		_head._size++;
+		return (in_node);
+	}
+
+	// the two _insert functions are just here to simplify
+	// the interface by deconstructing the pairs in two elements
+
+	pair<iterator, bool>	_insert_pair(const pair_type& pair)
+	{
+		return (insert(pair.first, pair.second));
+	}
+
+	iterator	_insert_pos(iterator pos, const pair_type& pair)
+	{
+		return (insert(pos, pair.first, pair.second));
+	}
+
 	void	erase(iterator pos)
 	{
 		node_ptr	pos_node = pos._node;
+
+		if (pos_node == _head._null)
+			return ;
 		if (pos_node == _head._begin)
 			_head._begin = _rb_tree_successor(_head._begin);
 		if (pos_node == _head._null->_left)
-			_head._null._left = _rb_tree_predecessor(_head._null->_left);
+			_head._null->_left = _rb_tree_predecessor(_head._null->_left);
 		_rb_tree_delete(pos_node);
 		_delete_node(pos_node);
 		_head._size--;
+	}
+
+	size_type	erase(const Key& key)
+	{
+		node_ptr	pos_node = _find_node(key);
+
+		if (pos_node == _head._null)
+			return (0);
+		if (pos_node == _head._begin)
+			_head._begin = _rb_tree_successor(_head._begin);
+		if (pos_node == _head._null->_left)
+			_head._null->_left = _rb_tree_predecessor(_head._null->_left);
+		_rb_tree_delete(pos_node);
+		_delete_node(pos_node);
+		_head._size--;
+		return (1);
 	}
 
 	void	swap(rb_tree& other)
@@ -637,13 +709,27 @@ class rb_tree
 
 	private:
 
+	node_ptr	_find_node(const Key& key) const
+	{
+		node_ptr	x = _head._root;
+
+		while (x != _head._null && x->_key != key)
+		{
+			if (_comp(x->_key, key))
+				x = x->_right;
+			else if (_comp(key, x->_key))
+				x = x->_left;
+		}
+		return (x);
+	}
+
 	// insert helper functions
 
 	// actual insert function
-	node_ptr	_rb_tree_insert(node_ptr z)
+	node_ptr	_rb_tree_insert(node_ptr z, node_ptr start)
 	{
 		node_ptr	y = _head._null;
-		node_ptr	x = _head._root;
+		node_ptr	x = start;
 
 		while (x != _head._null)
 		{
@@ -723,13 +809,7 @@ class rb_tree
 		_head._root->_color = black;
 	}
 
-	template <typename PairType>
-	void	_insert_pair(const PairType& pair)
-	{
-		insert(pair.first, pair.second);
-	}
-
-	// delete helper functions
+		// delete helper functions
 
 	void	_rb_tree_delete(node_ptr z)
 	{
@@ -850,8 +930,7 @@ class rb_tree
 			u->_p->_left = v;
 		else
 			u->_p->_right = v;
-		if (v != _head._null)
-			v->_p = u->_p;
+		v->_p = u->_p;
 	}
 
 	void	_left_rotate(node_ptr x)
@@ -864,8 +943,7 @@ class rb_tree
 		y->_p = x->_p;
 		// these 3 conditions replace x by y in x's former parent
 		if (x->_p == _head._null)
-			_head._root = y;
-		else if (x == x->_p->_left)
+			_head._root = y;		else if (x == x->_p->_left)
 			x->_p->_left = y;
 		else
 			x->_p->_right = y;
@@ -929,7 +1007,7 @@ class rb_tree
 		}
 	}
 
-	template <Iter>
+	template <typename Iter>
 	void	_rb_tree_copy_range(Iter first, Iter last)
 	{
 		while (first != last)
@@ -940,48 +1018,48 @@ class rb_tree
 	}
 
 	// attributes
-	rb_tree_header<Key, T, Allocator>	_head;
+	rb_tree_header<Key, T, node_allocator>	_head;
 	Compare			_comp;
-	Allocator		_alloc;
+	node_allocator	_alloc;
 
 };
 
 // Comparison operators 
 
-template <typename mapL, typename mapR>
-bool	operator==(const mapL& left, const mapR& right)
+template <typename Key, typename T, typename Compare, typename Allocator>
+bool	operator==(const rb_tree<Key, T, Compare, Allocator>& left, const rb_tree<Key, T, Compare, Allocator>& right)
 {
 	if (left.size() != right.size())
 		return (false);
 	return (std::equal(left.begin(), left.end(), right.begin()));
 }
 
-template <typename mapL, typename mapR>
-bool	operator!=(const mapL& left, const mapR& right)
+template <typename Key, typename T, typename Compare, typename Allocator>
+bool	operator!=(const rb_tree<Key, T, Compare, Allocator>& left, const rb_tree<Key, T, Compare, Allocator>& right)
 {
 	return (!(left == right));
 }
 
-template <typename mapL, typename mapR>
-bool	operator<(const mapL& left, const mapR& right)
+template <typename Key, typename T, typename Compare, typename Allocator>
+bool	operator<(const rb_tree<Key, T, Compare, Allocator>& left, const rb_tree<Key, T, Compare, Allocator>& right)
 {
 	return (ft::lexicographical_compare(left.begin(), left.end(), right.begin(), right.end()));
 }
 
-template <typename mapL, typename mapR>
-bool	operator>=(const mapL& left, const mapR& right)
+template <typename Key, typename T, typename Compare, typename Allocator>
+bool	operator>=(const rb_tree<Key, T, Compare, Allocator>& left, const rb_tree<Key, T, Compare, Allocator>& right)
 {
 	return (!ft::lexicographical_compare(left.begin(), left.end(), right.begin(), right.end()));
 }
 
-template <typename mapL, typename mapR>
-bool	operator>(const mapL& left, const mapR& right)
+template <typename Key, typename T, typename Compare, typename Allocator>
+bool	operator>(const rb_tree<Key, T, Compare, Allocator>& left, const rb_tree<Key, T, Compare, Allocator>& right)
 {
 	return (ft::lexicographical_compare(right.begin(), right.end(), left.begin(), left.end()));
 }
 
-template <typename mapL, typename mapR>
-bool	operator<=(const mapL& left, const mapR& right)
+template <typename Key, typename T, typename Compare, typename Allocator>
+bool	operator<=(const rb_tree<Key, T, Compare, Allocator>& left, const rb_tree<Key, T, Compare, Allocator>& right)
 {
 	return (!ft::lexicographical_compare(right.begin(), right.end(), left.begin(), left.end()));
 }
