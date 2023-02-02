@@ -23,6 +23,7 @@ struct rb_node {
 
 	typedef rb_node*	node_ptr;
 
+	// only used for initializing the null node
 	rb_node() :
 		_color(),
 		_is_null(),
@@ -34,7 +35,7 @@ struct rb_node {
 		{ }
 	
 	rb_node(const Key& key, const T& val, node_ptr null_node) :
-		_color(),
+		_color(black),
 		_is_null(not_null),
 		_key(key),
 		_val(val),
@@ -366,6 +367,7 @@ struct rb_tree_header
 
 	node_ptr	_root;
 	node_ptr	_begin;
+	node_ptr	_end;
 	node_ptr	_null;
 	typename Allocator::size_type	_size;
 };
@@ -565,23 +567,14 @@ class rb_tree
 
 	iterator	insert(iterator pos, const Key& key, const T& val)
 	{
-		node_ptr	pos_node = pos._node;
 		node_ptr	in_node = _get_node(key, val);
-		node_ptr	tmp_node;
+		node_ptr	tmp_node = _rb_tree_insert(in_node, _head._root);
 
-		if (pos_node == _head._null) // map is empty
-			tmp_node = _rb_tree_insert(in_node, _head._root);
-		else
+		(void)pos;
+		if (tmp_node != in_node)
 		{
-			if (pos_node != _head._root)
-				tmp_node = _rb_tree_insert(in_node, pos_node->_p);
-			else
-				tmp_node = _rb_tree_insert(in_node, pos_node);
-			if (tmp_node != in_node)
-			{
-				_delete_node(in_node);
-				return (tmp_node);
-			}
+			_delete_node(in_node);
+			return (tmp_node);
 		}
 		if (_head._begin == _head._null || in_node == _rb_tree_predecessor(_head._begin))
 			_head._begin = in_node;
@@ -823,7 +816,7 @@ class rb_tree
 		_head._root->_color = black;
 	}
 
-		// delete helper functions
+	// delete helper functions
 
 	void	_rb_tree_delete(node_ptr z)
 	{
