@@ -33,14 +33,14 @@ struct rb_node {
 		_p(NULL)
 		{ }
 	
-	rb_node(const Key& key, const T& val) :
+	rb_node(const Key& key, const T& val, node_ptr null_node) :
 		_color(),
 		_is_null(not_null),
 		_key(key),
 		_val(val),
-		_left(NULL),
-		_right(NULL),
-		_p(NULL),
+		_left(null_node),
+		_right(null_node),
+		_p(null_node),
 		_key_val(key, val)
 		{ }
 	
@@ -188,6 +188,11 @@ struct	const_rb_tree_iterator
 
 	~const_rb_tree_iterator(void) { }
 
+	const_rb_tree_iterator&	operator=(const const_rb_tree_iterator& from)
+	{
+		_node = from._node;
+		return (*this);
+	}
 
 	// iterator requirements
 
@@ -377,7 +382,7 @@ class rb_tree
 	typedef rb_tree_iterator<Key, T>		iterator;
 	typedef const_rb_tree_iterator<Key, T>	const_iterator;
 	typedef ft::reverse_iterator<iterator>		reverse_iterator;
-	typedef ft::reverse_iterator<const iterator>	const_reverse_iterator;
+	typedef ft::reverse_iterator<const_iterator>	const_reverse_iterator;
 	typedef typename Allocator::template rebind<rb_node<Key, T> >::other	node_allocator;
 
 	// constructors/destructor
@@ -564,12 +569,21 @@ class rb_tree
 		node_ptr	in_node = _get_node(key, val);
 		node_ptr	tmp_node;
 
-		if ((tmp_node = _rb_tree_insert(in_node, pos_node->_p)) != in_node)
+		if (pos_node == _head._null) // map is empty
+			tmp_node = _rb_tree_insert(in_node, _head._root);
+		else
 		{
-			_delete_node(in_node);
-			return (tmp_node);
+			if (pos_node != _head._root)
+				tmp_node = _rb_tree_insert(in_node, pos_node->_p);
+			else
+				tmp_node = _rb_tree_insert(in_node, pos_node);
+			if (tmp_node != in_node)
+			{
+				_delete_node(in_node);
+				return (tmp_node);
+			}
 		}
-		if (_head._begin == NULL || in_node == _rb_tree_predecessor(_head._begin))
+		if (_head._begin == _head._null || in_node == _rb_tree_predecessor(_head._begin))
 			_head._begin = in_node;
 		if (_head._null->_left == _head._null || in_node == _rb_tree_successor(_head._null->_left))
 			_head._null->_left = in_node;
@@ -974,7 +988,7 @@ class rb_tree
 	node_ptr	_get_node(const Key& key, const T& val)
 	{
 		node_ptr	ret = _alloc.allocate(1);
-		_alloc.construct(__builtin_addressof(*ret), rb_node<Key, T>(key, val));
+		_alloc.construct(__builtin_addressof(*ret), rb_node<Key, T>(key, val, _head._null));
 		return (ret);
 	}
 
