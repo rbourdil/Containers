@@ -35,6 +35,7 @@ vector<T, Allocator>::operator=(const vector& orig)
 		{
 			std::copy(orig.begin(), orig.begin() + size(), _markers._start);
 			ft::_my_uninitialized_copy(orig.begin() + size(), orig.end(), _markers._end, _alloc);
+			_markers._end = _markers._start + orig_len;
 		} 
 	}
 	return (*this);

@@ -90,18 +90,6 @@ namespace ft {
 		typedef true_type	type;
 	};
 
-	template <>
-	struct is_integral<long long> {
-		enum { value = 1 };
-		typedef true_type	type;
-	};
-
-	template <>
-	struct is_integral<unsigned long long> {
-		enum { value = 1 };
-		typedef true_type	type;
-	};
-
 	// are_same trait
 	template <typename T1, typename T2>
 	struct are_same { 

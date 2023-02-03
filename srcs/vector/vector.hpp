@@ -190,8 +190,11 @@ namespace ft {
 
 			void	pop_back(void)
 			{
-				_markers._end--;
-				ft::destroy(end(), end() + 1, _alloc);
+				if (!empty())	
+				{
+					_markers._end--;
+					ft::destroy(end(), end() + 1, _alloc);
+				}
 			}
 
 			// insert a value at pos p (defined in .tcc)
@@ -292,12 +295,12 @@ namespace ft {
 
 			reference	back(void)
 			{
-				return (*--end());
+				return (*(end() - 1));
 			}
 
 			const_reference	back(void) const
 			{
-				return (*--end());
+				return (*(end() - 1));
 			}
 
 
