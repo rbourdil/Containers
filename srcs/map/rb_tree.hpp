@@ -376,16 +376,18 @@ template <typename Key, typename T,
 	typename Compare, typename Allocator>
 class rb_tree
 {
+	private:
+	typedef typename Allocator::template rebind<rb_node<Key, T> >::other	node_allocator;
+
 	public:
 	typedef	rb_node<Key, T>*				node_ptr;
-	typedef typename Allocator::size_type	size_type;
+	typedef typename node_allocator::size_type	size_type;
 	typedef ptrdiff_t						difference_type;
 	typedef ft::pair<Key, T>				pair_type;
 	typedef rb_tree_iterator<Key, T>		iterator;
 	typedef const_rb_tree_iterator<Key, T>	const_iterator;
 	typedef ft::reverse_iterator<iterator>		reverse_iterator;
 	typedef ft::reverse_iterator<const_iterator>	const_reverse_iterator;
-	typedef typename Allocator::template rebind<rb_node<Key, T> >::other	node_allocator;
 
 	// constructors/destructor
 
@@ -395,7 +397,7 @@ class rb_tree
 		_comp(from._comp),
 		_alloc(from._alloc)
 	{
-		_rb_tree_copy(from.get_root(), from._head._null);
+		_rb_tree_copy_range(from.begin(), from.end());
 	}
 
 	explicit rb_tree(const Compare& comp, const Allocator& alloc) :
@@ -1001,16 +1003,6 @@ class rb_tree
 			_delete_all_nodes(x->_left);
 			_delete_all_nodes(x->_right);
 			_delete_node(x);
-		}
-	}
-
-	void	_rb_tree_copy(node_ptr x, node_ptr null)
-	{
-		if (x != null)
-		{
-			insert(x->_key, x->_val);
-			_rb_tree_copy(x->_right, null);
-			_rb_tree_copy(x->_left, null);
 		}
 	}
 
