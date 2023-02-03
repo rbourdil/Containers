@@ -357,6 +357,15 @@ struct rb_tree_header
 		Allocator().deallocate(__builtin_addressof(*_null), 1);
 	}
 
+	void	swap(rb_tree_header& other)
+	{
+		std::swap(_root, other._root);
+		std::swap(_begin, other._begin);
+		std::swap(_end, other._end);
+		std::swap(_null, other._null);
+		std::swap(_size, other._size);
+	}
+
 	void	reset(void)
 	{
 		_root = _null;
@@ -632,12 +641,9 @@ class rb_tree
 
 	void	swap(rb_tree& other)
 	{
-		std::swap(_head._root, other._head._root);
-		std::swap(_head._begin, other._head._begin);
-		std::swap(_head._null, other._head._null);
-		size_type	tmp_size = _head._size;
-		_head._size = other._head._size;
-		other._head._size = tmp_size;
+		_head.swap(other._head);
+		std::swap(_alloc, other._alloc);
+		std::swap(_comp, other._comp);
 	}
 
 	// capacity
