@@ -303,6 +303,10 @@ namespace ft {
 				return (*(end() - 1));
 			}
 
+			T*	data(void)
+			{
+				return (_markers._start);
+			}
 
 		private:
 			Allocator			_alloc;

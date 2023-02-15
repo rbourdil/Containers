@@ -2,11 +2,11 @@
 
 void	map_test(void)
 {
-	std::ofstream	outfile(FILENAME);
+	std::ofstream	outfile(MAP_FILENAME);
 
 	if (!outfile)
 	{
-		std::cerr << "failed to create ft_map_test file" << std::endl;
+		std::cerr << "failed to create map test file" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 
@@ -19,7 +19,6 @@ void	map_test(void)
 		fill_map(map, 10000);
 			
 		// at
-		outfile << "*** TEST AT ***" << std::endl;
 		outfile << map.at(5) << std::endl;
 		try {
 			outfile << map.at(10000) << std::endl;
@@ -30,7 +29,6 @@ void	map_test(void)
 		outfile << std::endl;
 
 		// operator[]
-		outfile << "*** TEST OPERATOR[] ***" << std::endl;
 		outfile << map[5] << std::endl;
 		map[5] = 5;
 		outfile << map[5] << std::endl;
@@ -54,14 +52,12 @@ void	map_test(void)
 		fill_map(map, 100);
 		
 		// begin, end
-		outfile << "*** TEST BEGIN AND END ***" << std::endl;
 		for (iterator_type it = map.begin(); it != map.end(); it++)
 			PRINT_NODE(outfile, it);
 
 		outfile << std::endl;
 
-		// rbgein, rend
-		outfile << "*** TEST RBEGIN AND REND ***" << std::endl;
+		// rbegin, rend
 		for (reverse_iterator_type it = map.rbegin(); it != map.rend(); it++)
 			PRINT_NODE(outfile, it);
 	}
@@ -120,7 +116,46 @@ void	map_test(void)
 	outfile << std::endl;
 
 	// Lookup
-	{}
+	{
+		NS::map<size_t, size_t>	map;
 
+		fill_map(map, 100);
 
+		// count
+		outfile << map.count(0) << std::endl;
+		outfile << map.count(1000) << std::endl;
+
+		outfile << std::endl;
+
+		// find
+		PRINT_NODE(outfile, map.find(5));
+			
+		// lower bound
+		PRINT_NODE(outfile, map.lower_bound(5));
+
+		// upper bound
+		PRINT_NODE(outfile, map.lower_bound(5));
+	}
+
+	// Non member functions
+	{
+		typedef NS::map<size_t, size_t>	map_type;
+
+		map_type	map1;
+		map_type	map2;
+
+		if (map1 == map2)
+			outfile << "equal" << std::endl;
+		fill_map(map1, 100);
+		if (map1 != map2)
+			outfile << "not equal" << std::endl;
+		fill_map(map2, 200);
+		if (map1 < map2)
+			outfile << "map1 < map2" << std::endl;
+		else
+			outfile << "map1 >= map2" << std::endl;
+		std::swap(map1, map2);
+		print_map(outfile, map1);
+		print_map(outfile, map2);
+	}
 }
