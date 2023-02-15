@@ -9,21 +9,39 @@
 #include <iostream>
 #include <fstream>
 
-void	ft_map_test(void);
+#ifdef FT
+	#define NS ft
+	#define FILENAME "ft_map_test.txt"
+#endif
+#ifdef STD
+	#define NS std
+	#define FILENAME "std_map_test.txt"
+#endif
+
+#define PRINT_NODE(f, x) ((f) << (x)->first << " : " << (x)->second << std::endl)
+
+void	map_test(void);
 
 // test helper functions
 
 template <typename Map>
-void	print_map(std::ostream& f, const Map& map)
+std::ofstream&	print_map(std::ofstream& f, const Map& map)
 {
-	typedef typename Map::iterator	iterator_type;
+	typedef typename Map::const_iterator	const_iterator_type;
 
 	if (f)
 	{
-		for (iterator_type it = map.begin(); it != map.end(); it++)
-			ostream << it->first << ":" << it->second << std::endl;
+		for (const_iterator_type it = map.begin(); it != map.end(); it++)
+			PRINT_NODE(f, it);
 	}
 	return (f);
+}
+
+template <typename Map>
+void	fill_map(Map& map, size_t n)
+{
+	for (size_t i = 0; i < n; i++)
+		map.insert(NS::make_pair(i, i * i));
 }
 
 #endif

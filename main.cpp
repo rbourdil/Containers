@@ -2,6 +2,6 @@
 
 int	main(void)
 {
-	ft_map_test();
+	map_test();
 	return (0);
 }
